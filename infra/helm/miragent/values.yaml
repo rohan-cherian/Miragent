@@ -1,0 +1,74 @@
+# Global settings
+global:
+  environment: production
+  tenantId: "acme-corp"
+  imageRegistry: ""  # ECR registry prefix, e.g. "123456789.dkr.ecr.us-east-1.amazonaws.com"
+
+# API service
+api:
+  image:
+    repository: miragent/scout-api
+    tag: "0.14.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests: { cpu: "250m", memory: "512Mi" }
+    limits: { cpu: "1000m", memory: "2Gi" }
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# Worker service
+worker:
+  image:
+    repository: miragent/scout-worker
+    tag: "0.14.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests: { cpu: "500m", memory: "1Gi" }
+    limits: { cpu: "2000m", memory: "4Gi" }
+
+# Neo4j (can use managed or bundled)
+neo4j:
+  enabled: true
+  neo4j:
+    name: "miragent"
+    password: "CHANGE_ME_IN_PRODUCTION"
+    resources:
+      requests: { cpu: "500m", memory: "2Gi" }
+      limits: { cpu: "2000m", memory: "8Gi" }
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: miragent.client-domain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: miragent-tls
+      hosts:
+        - miragent.client-domain.com
+
+# Secrets (these are references to K8s secrets, not actual values)
+secrets:
+  anthropicApiKey: ""
+  scoutApiKey: ""
+  neo4jPassword: ""
+
+# Config
+config:
+  useMockConnectors: "false"
+  environment: "production"
+  logLevel: "INFO"

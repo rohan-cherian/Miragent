@@ -1,0 +1,15 @@
+apiVersion: v2
+name: miragent
+description: Miragent — Agentic CIO in a Box. Full-stack PE operating intelligence platform.
+type: application
+version: 0.14.0
+appVersion: "0.14.0"
+keywords: [pe, operating-intelligence, ai, graph, analytics]
+maintainers:
+  - name: Miragent Engineering
+    email: eng@miragent.ai
+dependencies:
+  - name: neo4j
+    version: "5.x.x"
+    repository: "https://helm.neo4j.com/neo4j"
+    condition: neo4j.enabled

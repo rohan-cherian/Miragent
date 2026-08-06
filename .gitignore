@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment — NEVER commit secrets
+.env.local
+.env.*.local
+*.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# Docker volumes (local data)
+infra/volumes/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+
+# Claude Code session files
+.claude/
+
+# Node / frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

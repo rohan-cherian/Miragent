@@ -1,0 +1,37 @@
+# Fly.io deployment configuration for Miragent API
+# Deploy with: fly launch (first time) or fly deploy (subsequent)
+#
+# Required secrets (set with: fly secrets set KEY=value):
+#   SECRET_KEY          — JWT signing secret (openssl rand -hex 32)
+#   NEO4J_URI           — bolt://your-neo4j-host:7687
+#   NEO4J_PASSWORD      — Neo4j password
+#   CLICKHOUSE_HOST     — ClickHouse host
+#   ANTHROPIC_API_KEY   — Claude API key (optional — falls back to template)
+
+app = "miragent"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENVIRONMENT = "production"
+  USE_MOCK_CONNECTORS = "true"
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

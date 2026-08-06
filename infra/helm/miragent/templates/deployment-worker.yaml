@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "miragent.fullname" . }}-worker
+  labels:
+    {{- include "miragent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "miragent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "miragent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "miragent.serviceAccountName" . }}
+      containers:
+        - name: scout-worker
+          image: {{ include "miragent.workerImage" . }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          command: ["python", "-m", "scout.worker"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "miragent.fullname" . }}-config
+            - secretRef:
+                name: {{ include "miragent.fullname" . }}-secrets
+          resources:
+            requests:
+              cpu: {{ .Values.worker.resources.requests.cpu }}
+              memory: {{ .Values.worker.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.worker.resources.limits.cpu }}
+              memory: {{ .Values.worker.resources.limits.memory }}

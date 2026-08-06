@@ -1,0 +1,26 @@
+Miragent has been deployed successfully!
+
+Get the API URL:
+{{- if .Values.ingress.enabled }}
+  https://{{ (first .Values.ingress.hosts).host }}
+{{- else }}
+  kubectl port-forward svc/{{ include "miragent.fullname" . }}-api 8000:8000
+  http://localhost:8000
+{{- end }}
+
+Run your first scan:
+  curl -X POST https://<your-host>/scans \
+    -H "X-API-Key: $SCOUT_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"tenant_id": "{{ .Values.global.tenantId }}"}'
+
+View insights:
+  curl "https://<your-host>/insights?tenant_id={{ .Values.global.tenantId }}" \
+    -H "X-API-Key: $SCOUT_API_KEY"
+
+Dashboard: https://{{ (first .Values.ingress.hosts).host }}/
+
+Security reminders:
+  - Rotate SCOUT_API_KEY immediately after first deployment
+  - Ensure Neo4j password in the secret is not the default
+  - Enable TLS/cert-manager for production ingress

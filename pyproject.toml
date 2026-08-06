@@ -1,0 +1,94 @@
+[tool.poetry]
+name = "scout"
+version = "0.1.0"
+description = "Miragent Scout — Digital Twin Ingestion Engine"
+authors = ["Miragent <hello@miragent.ai>"]
+readme = "README.md"
+packages = [{include = "scout"}]
+
+# ─────────────────────────────────────────────────────────
+# RUNTIME DEPENDENCIES
+# These are installed in production. Keep this lean.
+# ─────────────────────────────────────────────────────────
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Data validation — every record entering Scout is validated here
+pydantic = {extras = ["email"], version = "^2.13.4"}
+pydantic-settings = "^2.0"   # reads config from environment variables
+
+# HTTP client — used by real connectors to call SFDC, Workday, etc.
+httpx = ">=0.27"
+
+# Retry logic — wraps API calls with exponential backoff
+tenacity = "^8.2"
+
+# Database clients
+neo4j = "^5.18"              # graph database (the twin's backbone)
+clickhouse-driver = "^0.2.7" # time-series events
+weaviate-client = "^4.4"     # vector / semantic search
+
+# In-process transformation layer (replaces Spark for mid-market scale)
+duckdb = "^1.0"
+
+# Unique ID generation for canonical records
+shortuuid = "^1.0"
+
+# Redis client — task queue broker
+redis = "^5.0"
+
+# ─────────────────────────────────────────────────────────
+# DEV-ONLY DEPENDENCIES
+# Never installed in production Docker images
+# ─────────────────────────────────────────────────────────
+fastapi = ">=0.111"
+uvicorn = {version = ">=0.30", extras = ["standard"]}
+anthropic = "^0.101.0"
+reportlab = "^4.5.1"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+sqlalchemy = "^2.0.49"
+python-docx = "^1.2.0"
+pyotp = "^2.9.0"
+qrcode = {extras = ["pil"], version = "^8.2"}
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"              # test runner
+pytest-asyncio = "^0.23"     # async test support
+pytest-cov = "^5.0"          # code coverage reports
+ruff = "^0.5"                # linter (replaces flake8 + isort + pylint)
+mypy = "^1.10"               # static type checker
+
+# ─────────────────────────────────────────────────────────
+# BUILD SYSTEM — tells Poetry how to build the package
+# ─────────────────────────────────────────────────────────
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ─────────────────────────────────────────────────────────
+# RUFF — linter configuration
+# ─────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort, UP = pyupgrade
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length handled separately
+
+# ─────────────────────────────────────────────────────────
+# MYPY — type checker configuration
+# ─────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = false          # we'll tighten this as the codebase matures
+ignore_missing_imports = true
+
+# ─────────────────────────────────────────────────────────
+# PYTEST — test runner configuration
+# ─────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"   # verbose output, short tracebacks

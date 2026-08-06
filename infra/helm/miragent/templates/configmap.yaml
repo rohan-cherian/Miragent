@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "miragent.fullname" . }}-config
+  labels:
+    {{- include "miragent.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.config.environment }}
+  USE_MOCK_CONNECTORS: {{ .Values.config.useMockConnectors | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel }}
+  TENANT_ID: {{ .Values.global.tenantId | quote }}
+  NEO4J_URI: bolt://{{ include "miragent.fullname" . }}-neo4j:7687
+  REDIS_URL: redis://{{ include "miragent.fullname" . }}-redis:6379/0

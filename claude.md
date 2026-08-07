@@ -1,8 +1,90 @@
-# Emulator workstream — W1-SRC-04 + W1-SRC-05
+# Miragent workstream notes
 
-**Latest:** W1-SRC-05 Zendesk emulator API — **Complete**  
-**Foundation:** W1-SRC-04 Shared emulator plumbing — **Complete**
+**Latest:** W1-API-01 FastAPI service skeleton — **Complete**  
+**Also complete:** W1-SRC-05 Zendesk emulator · W1-SRC-04 Shared plumbing
 
+---
+
+# W1-API-01 — FastAPI service skeleton
+
+**Status:** Complete  
+**Location:** `scout/service/`  
+**Tests:** `tests/service/test_console_api.py` (5 tests passing)  
+**Requires:** Postgres with `src_zendesk` (same as Zendesk emulator)
+
+---
+
+## What this work is
+
+The **console API door** — app factory, DI, probes, live `/corpus/stats`, OpenAPI, CORS, and one error envelope. All future console endpoints (~15 over three weeks) build on this.
+
+`/corpus/stats` powers **Scene 1**: live tickets / accounts / analysts / channels / date range from Postgres — never stubs.
+
+---
+
+## What was delivered
+
+| Piece | Detail |
+|--------|--------|
+| App factory | `create_app()` in `scout/service/app.py` |
+| DI | `DatabaseDep` / settings via FastAPI `Depends` + `app.state` |
+| `GET /health` | Liveness — process up |
+| `GET /ready` | Readiness — Postgres + `src_zendesk.tickets` present |
+| `GET /corpus/stats` | Live aggregates from Postgres |
+| OpenAPI | `/docs`, `/redoc`, `/openapi.json` |
+| CORS | localhost:5173 / 3000 (configurable) |
+| Error envelope | `{ "error": { "code", "message", "details" } }` everywhere |
+
+### `/corpus/stats` mapping
+
+| Field | Source |
+|--------|--------|
+| `tickets` | `COUNT(*)` `src_zendesk.tickets` |
+| `accounts` | `COUNT(*)` `src_zendesk.organizations` |
+| `analysts` | users with role `agent` or `admin` |
+| `channels` | `COUNT(DISTINCT via_channel)` on tickets |
+| `date_range` | min `created_at` → max `updated_at` |
+
+---
+
+## Where it lives
+
+```
+scout/service/
+  __init__.py
+  app.py        # create_app factory
+  config.py     # ServiceSettings
+  db.py         # Postgres wrapper
+  deps.py       # DI
+  errors.py     # consistent envelope
+  corpus.py     # stats SQL
+  routes.py     # /health /ready /corpus/stats
+
+tests/service/test_console_api.py
+```
+
+---
+
+## How to run
+
+```powershell
+docker compose -f docker-compose.zendesk-emulator.yml up -d
+$env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+poetry run uvicorn scout.service.app:create_app --factory --reload --port 8090
+```
+
+- Health: http://127.0.0.1:8090/health  
+- Ready: http://127.0.0.1:8090/ready  
+- Stats: http://127.0.0.1:8090/corpus/stats  
+- Docs: http://127.0.0.1:8090/docs  
+
+---
+
+## Status
+
+**W1-API-01 — FastAPI service skeleton: Complete**
+
+---
 ---
 
 # W1-SRC-05 — Zendesk emulator API

@@ -1,0 +1,30 @@
+# Postgres for Zendesk emulator demos (src_zendesk schema + data dump).
+# Usage:
+#   docker compose -f docker-compose.zendesk-emulator.yml up -d
+#   poetry run python scripts/load_zendesk_postgres.py
+#   $env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+#   poetry run uvicorn scout.emulators.zendesk.app:create_zendesk_app --factory --reload --port 8081
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: zendesk_emulator_postgres
+    restart: unless-stopped
+    ports:
+      # Host 5433 → container 5432 (avoids clash with other local Postgres on 5432)
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: zendesk_admin
+      POSTGRES_PASSWORD: zendesk_dev
+      POSTGRES_DB: zendesk_agent
+    volumes:
+      - zendesk_emulator_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zendesk_admin -d zendesk_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  zendesk_emulator_pgdata:

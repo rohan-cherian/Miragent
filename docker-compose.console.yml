@@ -1,0 +1,59 @@
+# Console MVP stack (W1-CON-01 + W1-API-01 + Postgres)
+#
+#   docker compose -f docker-compose.console.yml up -d --build
+#   Open http://localhost:8080  (console)
+#   API via same origin /api/* → FastAPI :8090 inside the network
+#
+# First-time data load (host):
+#   poetry run python scripts/load_zendesk_postgres.py
+#   (DSN: postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent)
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: zendesk_emulator_postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: zendesk_admin
+      POSTGRES_PASSWORD: zendesk_dev
+      POSTGRES_DB: zendesk_agent
+    volumes:
+      - zendesk_emulator_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zendesk_admin -d zendesk_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: miragent_console_api
+    restart: unless-stopped
+    environment:
+      ZENDESK_DATABASE_URL: postgresql://zendesk_admin:zendesk_dev@postgres:5432/zendesk_agent
+      API_DATABASE_URL: postgresql://zendesk_admin:zendesk_dev@postgres:5432/zendesk_agent
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  console:
+    build:
+      context: ./console
+      dockerfile: Dockerfile
+    container_name: miragent_console
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  zendesk_emulator_pgdata:

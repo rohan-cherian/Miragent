@@ -32,10 +32,11 @@ class ServiceSettings(BaseSettings):
     # Set via API_DATABASE_URL or constructor kwarg database_url=
     database_url: str = Field(default="", alias="API_DATABASE_URL")
 
-    # Comma-separated origins for the console (Vite default included).
+    # Comma-separated origins for the console (Vite + compose nginx).
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"
-        "http://localhost:3000,http://127.0.0.1:3000"
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:8080,http://127.0.0.1:8080"
     )
 
     def resolved_database_url(self) -> str:

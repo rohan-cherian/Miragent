@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design tokens — demo-grade console (W1-CON-01).
+  Intentional palette; not a full design system.
+*/
+:root {
+  --color-ink: #14213d;
+  --color-ink-muted: #5c6b7a;
+  --color-ink-faint: #8b98a5;
+  --color-surface: #f6f3ee;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #ebe6de;
+  --color-accent: #0f6e56;
+  --color-accent-soft: #d8eee6;
+  --color-line: #d9d2c7;
+  --color-danger: #b42318;
+  --color-ok: #0f6e56;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --shadow-shell: 0 1px 0 rgba(20, 33, 61, 0.04), 0 12px 32px rgba(20, 33, 61, 0.06);
+  --sidebar-width: 240px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}

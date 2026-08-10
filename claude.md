@@ -1,8 +1,151 @@
 # Miragent workstream notes
 
-**Latest:** W1-API-01 FastAPI service skeleton — **Complete**  
-**Also complete:** W1-SRC-05 Zendesk emulator · W1-SRC-04 Shared plumbing
+**Latest:** W1-CON-01 Console shell — **Complete**  
+**Complete stack:** W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
 
+---
+
+## How the pieces fit together
+
+```
+Browser / Postman
+   │
+   ├─ :8080  Console UI (W1-CON-01)  ──/api/*──►  :8090 Console API (W1-API-01)
+   │                                                    │
+   ├─ :5173  Console Vite (dev)     ──/api/*──►        │
+   │                                                    ▼
+   └─ :8081  Zendesk emulator (W1-SRC-05) ────────► Postgres :5433
+                                                         │
+                                                         └─ schema src_zendesk
+                                                            (live dump data)
+```
+
+| Port | Service | Ticket |
+|------|---------|--------|
+| **5433** | Postgres (`src_zendesk`) | shared data |
+| **8081** | Zendesk emulator | W1-SRC-05 |
+| **8090** | Console FastAPI | W1-API-01 |
+| **8080** | Console UI (compose/nginx) | W1-CON-01 |
+| **5173** | Console UI (Vite dev) | W1-CON-01 |
+
+**Keep ports separate** — emulator ≠ console API. They share Postgres only.
+
+**Compose files:**
+- `docker-compose.zendesk-emulator.yml` — Postgres only (emulator DSN host port 5433)
+- `docker-compose.console.yml` — Postgres + console API + console UI
+
+---
+---
+
+# W1-CON-01 — Console shell
+
+**Status:** Complete  
+**Location:** `console/` (separate from Miragent CIO `frontend/`)  
+**Stack:** React 18 + Vite + Tailwind · **demo-grade** (explicit)  
+**Compose:** `docker-compose.console.yml`  
+**Depends on:** W1-API-01 FastAPI skeleton (for `/api` proxy)
+
+---
+
+## What this work is
+
+The **container for all twelve demo screens** across eight scenes. Layout, routing, auth stub, API client, and design tokens are settled now so week three can ship five screens in five days without fighting plumbing.
+
+**Demo-grade, not production-grade:** looks considered, no broken states. No design system, no component library, no settings page. Polish hours this week belong to the intelligence layer later.
+
+---
+
+## What was delivered
+
+| Piece | Detail |
+|--------|--------|
+| Layout | Sidebar + mobile nav — `src/layout/ShellLayout.tsx` |
+| Routing | 12 navigable routes (empty placeholders, intentional) |
+| Auth stub | `/login` — any email/password; Bearer token in `localStorage` |
+| API client | `src/api/client.ts` — `/health`, `/ready`, `/corpus/stats` + error envelope parsing |
+| Design tokens | CSS variables in `src/index.css` mapped into Tailwind |
+| Compose serve | nginx on **:8080**, proxies `/api` → FastAPI `:8090` |
+
+### Twelve routes (empty shells)
+
+| Route | Screen | Scene |
+|--------|--------|--------|
+| `/connections` | Connections | Scene 1 |
+| `/corpus` | Corpus dashboard | Scene 1 |
+| `/ticket-360` | Ticket 360 | Scene 2 |
+| `/context` | Context & citations | Scene 3 |
+| `/explainers` | Explainers | Scene 3 |
+| `/recommendation` | Analyst recommendation | Scene 4 |
+| `/call-player` | Call player | Scene 5 |
+| `/approvals` | Approval queue | Scene 6 |
+| `/audit` | Audit viewer | Scene 7 |
+| `/kb-review` | KB review | Scene 7 |
+| `/digest` | Weekly digest | Scene 8 |
+| `/home` | Overview | Shell |
+
+Default after login: `/corpus`.
+
+---
+
+## Where it lives
+
+```
+console/
+  package.json
+  vite.config.ts          # /api → :8090 proxy in dev
+  tailwind.config.js
+  Dockerfile              # build + nginx
+  nginx.conf              # SPA + /api proxy to api:8090
+  src/
+    main.tsx
+    App.tsx               # routes
+    index.css             # design tokens
+    nav.ts                # sidebar items
+    api/client.ts
+    auth/AuthContext.tsx
+    auth/RequireAuth.tsx
+    layout/ShellLayout.tsx
+    pages/LoginPage.tsx
+    pages/EmptyScreen.tsx
+    pages/screens.tsx     # twelve placeholders
+
+docker-compose.console.yml
+Dockerfile.api            # slim image for scout.service
+```
+
+---
+
+## How to run
+
+**Dev (hot reload):**
+```powershell
+# Terminal A — console API (needs Postgres on 5433)
+$env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+poetry run uvicorn scout.service.app:create_app --factory --reload --port 8090
+
+# Terminal B — console UI
+cd console
+npm install
+npm run dev
+# http://localhost:5173
+```
+
+**Compose (build + serve):**
+```powershell
+docker compose -f docker-compose.console.yml up -d --build
+# Console  http://localhost:8080
+# API      http://localhost:8090
+```
+
+Sign in with any email/password on `/login`, then navigate the sidebar.
+
+---
+
+## Status
+
+**W1-CON-01 — Console shell: Complete**
+
+---
 ---
 
 # W1-API-01 — FastAPI service skeleton
@@ -10,15 +153,16 @@
 **Status:** Complete  
 **Location:** `scout/service/`  
 **Tests:** `tests/service/test_console_api.py` (5 tests passing)  
-**Requires:** Postgres with `src_zendesk` (same as Zendesk emulator)
+**Requires:** Postgres with `src_zendesk` (same DB as Zendesk emulator)  
+**Consumed by:** W1-CON-01 console (`/api` → this service)
 
 ---
 
 ## What this work is
 
-The **console API door** — app factory, DI, probes, live `/corpus/stats`, OpenAPI, CORS, and one error envelope. All future console endpoints (~15 over three weeks) build on this.
+The **single door** between backend work and everything the console shows. App factory, DI, probes, live `/corpus/stats`, OpenAPI, CORS, and one error envelope. ~Fifteen endpoints land on this skeleton over the next three weeks.
 
-`/corpus/stats` powers **Scene 1**: live tickets / accounts / analysts / channels / date range from Postgres — never stubs.
+`/corpus/stats` powers **Scene 1**: live tickets / accounts / analysts / channels / date range — never stubs. First thing on screen in the demo.
 
 ---
 
@@ -32,8 +176,8 @@ The **console API door** — app factory, DI, probes, live `/corpus/stats`, Open
 | `GET /ready` | Readiness — Postgres + `src_zendesk.tickets` present |
 | `GET /corpus/stats` | Live aggregates from Postgres |
 | OpenAPI | `/docs`, `/redoc`, `/openapi.json` |
-| CORS | localhost:5173 / 3000 (configurable) |
-| Error envelope | `{ "error": { "code", "message", "details" } }` everywhere |
+| CORS | `:5173`, `:3000`, `:8080` (console) |
+| Error envelope | `{ "error": { "code", "message", "details" } }` on every failure |
 
 ### `/corpus/stats` mapping
 
@@ -45,6 +189,8 @@ The **console API door** — app factory, DI, probes, live `/corpus/stats`, Open
 | `channels` | `COUNT(DISTINCT via_channel)` on tickets |
 | `date_range` | min `created_at` → max `updated_at` |
 
+Typical live numbers from the dump: ~6000 tickets · ~1200 accounts · ~240 analysts · ~4 channels.
+
 ---
 
 ## Where it lives
@@ -53,7 +199,7 @@ The **console API door** — app factory, DI, probes, live `/corpus/stats`, Open
 scout/service/
   __init__.py
   app.py        # create_app factory
-  config.py     # ServiceSettings
+  config.py     # ServiceSettings (API_DATABASE_URL / ZENDESK_DATABASE_URL)
   db.py         # Postgres wrapper
   deps.py       # DI
   errors.py     # consistent envelope
@@ -61,6 +207,7 @@ scout/service/
   routes.py     # /health /ready /corpus/stats
 
 tests/service/test_console_api.py
+Dockerfile.api
 ```
 
 ---
@@ -69,6 +216,9 @@ tests/service/test_console_api.py
 
 ```powershell
 docker compose -f docker-compose.zendesk-emulator.yml up -d
+# first time only:
+poetry run python scripts/load_zendesk_postgres.py
+
 $env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
 poetry run uvicorn scout.service.app:create_app --factory --reload --port 8090
 ```
@@ -92,17 +242,18 @@ poetry run uvicorn scout.service.app:create_app --factory --reload --port 8090
 **Status:** Complete  
 **Location:** `scout/emulators/zendesk/`  
 **Tests:** `tests/emulators/test_zendesk_emulator.py` (20 tests passing)  
-**Depends on:** `scout/shared/` (W1-SRC-04)
+**Depends on:** `scout/shared/` (W1-SRC-04)  
+**Port:** **8081** (keep separate from console API :8090)
 
 ---
 
 ## What this work is
 
-The **first vendor API emulator** — and the only one with a **write path**. It exposes a Zendesk-faithful HTTP surface so connectors can exercise incremental sync, sideloads, ticket read/update, webhooks, and real rate limiting without hitting production Zendesk.
+The **first vendor API emulator** — and the only one with a **write path**. Zendesk-faithful HTTP so connectors can exercise incremental sync, sideloads, ticket read/update, webhooks, and real rate limiting without hitting production Zendesk.
 
-Built on top of shared plumbing (`AuthStub`, `ChaosSwitch`, `EmulatorRateLimiter`, Zendesk error envelopes). No prior `scout/emulators/` package existed; this ticket created it.
+Built on shared plumbing (`AuthStub`, `ChaosSwitch`, `EmulatorRateLimiter`, Zendesk error envelopes).
 
-**Data backend:** PostgreSQL ``src_zendesk`` only (live dump). No in-memory demo fallback when running the emulator. Unit tests may inject ``ZendeskStore`` via ``store=``.
+**Data backend:** PostgreSQL `src_zendesk` only (live dump). No in-memory demo fallback when running. Unit tests may inject `ZendeskStore` via `store=`.
 
 ---
 
@@ -110,185 +261,126 @@ Built on top of shared plumbing (`AuthStub`, `ChaosSwitch`, `EmulatorRateLimiter
 
 ### 1. Incremental export with cursor pagination
 
-`GET /api/v2/incremental/tickets/cursor` (also `.json`)
+`GET /api/v2/incremental/tickets/cursor`
 
 - First page: `?start_time=<unix>`
-- Next pages: `?cursor=<opaque>`
-- Response includes `tickets`, `after_cursor`, `after_url`, and **`end_of_stream`**
-- Tickets ordered by **`generated_timestamp`** (then `id`) — same ordering real Zendesk uses for incremental export
-- Stream terminates cleanly when `end_of_stream: true`
-
-**Module:** `scout/emulators/zendesk/export.py`
+- Next pages: `?cursor=<opaque>` (use `after_cursor` from prior response)
+- Response: `tickets`, `after_cursor`, `after_url`, **`end_of_stream`**
+- Ordered by **`generated_timestamp`** (then `id`)
+- Ends cleanly when `end_of_stream: true`
 
 ### 2. Sideloads
 
-`?include=users,organizations` on export and single-ticket GET returns related **users** and **organizations** in the same response so one call yields a complete picture.
+`?include=users,organizations` on export / single ticket — related users and orgs in the same call.
 
-### 3. Single ticket endpoint
+### 3. Single ticket
 
-`GET /api/v2/tickets/{id}` → `{ "ticket": { ... } }`  
-Missing id → Zendesk-shaped **404** (`RecordNotFound`).
+`GET /api/v2/tickets/{id}` → `{ "ticket": { … } }` · missing → Zendesk 404 `RecordNotFound`
 
-### 4. Ticket update endpoint (write-back)
+### 4. Ticket update (write-back)
 
-`PUT /api/v2/tickets/{id}` with `{ "ticket": { ... } }`
-
-- Updates mutable fields
-- Bumps `updated_at` and **`generated_timestamp`** (system update, Zendesk-style)
-- On Postgres backend, writes go to `src_zendesk.tickets`
-- Write-back target for week-four remediation flows
+`PUT /api/v2/tickets/{id}` with `{ "ticket": { … } }`  
+Persists to Postgres · bumps `generated_timestamp` · emits HMAC webhook.
 
 ### 5. Webhook emission with HMAC signing
 
-On every successful ticket update the emulator:
+`base64(HMAC-SHA256(timestamp + body, secret))`  
+Headers: `X-Zendesk-Webhook-Signature`, `X-Zendesk-Webhook-Signature-Timestamp`  
+Recorded in `store.emitted_webhooks` for next week’s event listener.
 
-- Builds a Zendesk-shaped event payload (`zen:event-type:ticket.*`)
-- Signs: `base64(HMAC-SHA256(timestamp + body, secret))`
-- Sets headers:
-  - `X-Zendesk-Webhook-Signature`
-  - `X-Zendesk-Webhook-Signature-Timestamp`
-- Records deliveries in `store.emitted_webhooks` for the event listener next week
+### 6. Account-wide rate limiting
 
-**Module:** `scout/emulators/zendesk/webhooks.py`  
-Default test secret matches Zendesk’s documented test secret.
+Shared key `"account"` → real **HTTP 429** + **`Retry-After`** + Zendesk envelope when depleted.
 
-### 6. Account-wide rate limiting that depletes
+Every request: **AuthStub → ChaosSwitch → EmulatorRateLimiter → handler**.
 
-All authenticated requests share one limiter key (`"account"`). When the budget is exhausted → genuine **HTTP 429** + **`Retry-After`** + Zendesk `APIRateLimitExceeded` body (via `EmulatorRateLimiter` + `build_error_body`).
+### 7. PostgreSQL only
 
-Every request also runs:
-
-1. `AuthStub` → 401 if no token  
-2. `ChaosSwitch` → optional `?chaos=429|500|slow|partial`  
-3. Account rate limit  
-
-### 7. PostgreSQL only (live data)
-
-The running emulator **requires** `ZENDESK_DATABASE_URL`. There is no demo/in-memory fallback.
-
-- Reads tickets / users / organizations from schema **`src_zendesk`**
-- `generated_timestamp` derived from `updated_at` (fallback `created_at`)
-- PUT updates persist in Postgres
-- `GET /health` reports `"backend": "postgres"`
-
-```
-docker compose -f docker-compose.zendesk-emulator.yml up -d
-poetry run python scripts/load_zendesk_postgres.py
-$env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
-poetry run uvicorn scout.emulators.zendesk.app:create_zendesk_app --factory --reload --port 8081
-```
-
-Postman hits return rows from Postgres (~6000 tickets from the dump).
+Requires `ZENDESK_DATABASE_URL`.  
+`GET /health` → `"backend": "postgres"`.
 
 ---
 
 ## Where it lives
 
 ```
-scout/emulators/
-  __init__.py
-  zendesk/
-    __init__.py
-    app.py              # FastAPI routes + shared gates
-    base.py             # TicketStore protocol
-    factory.py          # memory vs Postgres switch
-    store.py            # In-memory store
-    postgres_store.py   # Postgres src_zendesk store
-    export.py           # Cursor incremental export
-    webhooks.py         # HMAC sign / verify / emit
+scout/emulators/zendesk/
+  app.py · base.py · factory.py · store.py · postgres_store.py
+  export.py · webhooks.py
 
 docker-compose.zendesk-emulator.yml
 scripts/load_zendesk_postgres.py
 schema/001_src_zendesk_schema.sql
-
-tests/emulators/
-  test_zendesk_emulator.py
+tests/emulators/test_zendesk_emulator.py
 ```
 
 ---
 
 ## How to run
 
-```bash
-# Tests (inject in-memory store in fixtures — no Postgres required)
-poetry run pytest tests/emulators/test_zendesk_emulator.py -v
-
-# Emulator — live Postgres only
+```powershell
 docker compose -f docker-compose.zendesk-emulator.yml up -d
-poetry run python scripts/load_zendesk_postgres.py   # first time
+poetry run python scripts/load_zendesk_postgres.py   # first time only
+
 $env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
 poetry run uvicorn scout.emulators.zendesk.app:create_zendesk_app --factory --reload --port 8081
 ```
 
-Call with `Authorization: Bearer <any-token>` (or Basic). Missing credentials → Zendesk 401.  
-Check backend: `GET http://localhost:8081/health` → `{"backend":"postgres"}`.
-
-Starting without `ZENDESK_DATABASE_URL` raises an error (no demo data).
-
----
-
-## Why this matters
-
-| Benefit | Detail |
-|---------|--------|
-| Highest-value emulator | Only vendor with a write path for week-four write-back |
-| Realistic sync loop | Cursor + `end_of_stream` + `generated_timestamp` matches production incremental export |
-| One-call context | Sideloads return users/orgs with tickets |
-| Event listener ready | HMAC-signed webhook outbox for next week’s consumer |
-| Client-demo ready | Postgres backend serves dump data via the same API |
-| Shared plumbing proven | First consumer of W1-SRC-04 — pattern for Jira / Entra / SFDC / ServiceNow / Okta |
+Auth header: `Authorization: Bearer test-token`  
+Docs: http://127.0.0.1:8081/docs  
+Pagination demo:  
+`GET /api/v2/incremental/tickets/cursor?start_time=0&per_page=10`  
+then `?cursor=<after_cursor>&per_page=10` until `end_of_stream: true`.
 
 ---
 
 ## Status
 
-**W1-SRC-05 — Zendesk emulator API: Complete** (including Postgres wiring)
+**W1-SRC-05 — Zendesk emulator API: Complete**
 
 ---
 ---
 
-# W1-SRC-04 — Shared Emulator Plumbing
+# W1-SRC-04 — Shared emulator plumbing
 
 **Status:** Complete  
 **Location:** `scout/shared/`  
-**Tests:** `tests/shared/` (93 tests passing)
+**Tests:** `tests/shared/` (93 tests passing)  
+**Consumed by:** W1-SRC-05 (and future Jira / Entra / SFDC / ServiceNow / Okta emulators)
 
 ---
 
 ## What this work is
 
-A **shared foundation** in `scout/shared` that all six vendor API emulators reuse. Built **once**, so Zendesk, Jira, Entra, Salesforce, ServiceNow, and Okta don’t each reinvent pagination, rate limits, errors, auth, or chaos testing.
-
-This ticket is **not** the emulators themselves — it is the common layer they plug into. W1-SRC-05 is the first consumer.
+Shared foundation so six vendor emulators don’t reinvent pagination, rate limits, errors, auth, or chaos. **Not** the emulators themselves — the common layer they plug into.
 
 ---
 
 ## What was delivered (5 pieces)
 
-### 1. Rate limiting that behaves like a real API
+### 1. Rate limiting that actually bites
 
-Genuine **HTTP 429** + **`Retry-After`**. Not a fake flag inside a 200 body.
-
+Genuine **HTTP 429** + **`Retry-After`**. Not a flag inside a 200 body.  
 **Module:** `scout/shared/rate_limit.py`
 
-### 2. Vendor-shaped error bodies
+### 2. Vendor-shaped error envelopes
 
-| Vendor | Example shape |
-|--------|----------------|
+| Vendor | Shape |
+|--------|--------|
 | Salesforce | `[{ "message", "errorCode" }]` |
 | Zendesk | `{ "error", "description" }` |
 | Jira | `{ "errorMessages", "errors" }` |
 | Entra | `{ "error": { "code", "message", "innerError" } }` |
 | ServiceNow | `{ "error": { "message", "detail" }, "status": "failure" }` |
-| Okta | `{ "errorCode", "errorSummary", ... }` |
+| Okta | `{ "errorCode", "errorSummary", … }` |
 
 **Module:** `scout/shared/errors.py`
 
-### 3. Pagination in three real vendor styles
+### 3. Pagination — three real styles
 
-| Style | Vendor | How it works |
-|--------|--------|--------------|
-| Cursor | Zendesk | Opaque `after_cursor` / `page[after]` |
+| Style | Vendor | Mechanism |
+|--------|--------|-----------|
+| Cursor | Zendesk | opaque `after_cursor` / `page[after]` |
 | Offset | Jira | `startAt` + `maxResults` + `total` |
 | OData | Entra | `$skiptoken` / `@odata.nextLink` |
 
@@ -296,21 +388,19 @@ Genuine **HTTP 429** + **`Retry-After`**. Not a fake flag inside a 200 body.
 
 ### 4. Auth stubs
 
-No token → **HTTP 401** + vendor envelope. Supports `Bearer`, `Basic`, Okta `SSWS`.
-
+No token → **HTTP 401** + vendor envelope. Schemes: `Bearer`, `Basic`, Okta `SSWS`.  
 **Module:** `scout/shared/auth.py`
 
-### 5. `?chaos=` switch
+### 5. `?chaos=` switch (opt-in)
 
-| Switch | What it does |
-|--------|----------------|
+| Switch | Effect |
+|--------|--------|
 | `?chaos=429` | Force rate-limit response |
 | `?chaos=500` | Force server error |
-| `?chaos=slow` | Delay the response |
-| `?chaos=partial` | Short page that still says “more data” |
+| `?chaos=slow` | Delay response |
+| `?chaos=partial` | Short page that still says more data |
 
-Off by default.
-
+Off by default.  
 **Module:** `scout/shared/chaos.py`
 
 ---
@@ -319,24 +409,28 @@ Off by default.
 
 ```
 scout/shared/
-  __init__.py
-  rate_limit.py
-  errors.py
-  pagination.py
-  auth.py
-  chaos.py
+  __init__.py · rate_limit.py · errors.py · pagination.py · auth.py · chaos.py
 
 tests/shared/
-  test_rate_limit.py
-  test_errors.py
-  test_pagination.py
-  test_auth.py
-  test_chaos.py
+  test_rate_limit.py · test_errors.py · test_pagination.py · test_auth.py · test_chaos.py
 ```
 
 ---
 
 ## Status
 
-**W1-SRC-04 — Shared emulator plumbing: Complete**  
-**W1-SRC-05 — Zendesk emulator API: Complete**
+**W1-SRC-04 — Shared emulator plumbing: Complete**
+
+---
+---
+
+# Overall status
+
+| Ticket | Deliverable | Status |
+|--------|-------------|--------|
+| **W1-SRC-04** | Shared emulator plumbing | Complete |
+| **W1-SRC-05** | Zendesk emulator API (+ Postgres) | Complete |
+| **W1-API-01** | FastAPI console skeleton | Complete |
+| **W1-CON-01** | Console shell (React/Vite/Tailwind) | Complete |
+
+**Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-four write-back.

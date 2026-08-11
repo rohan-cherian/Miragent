@@ -6,7 +6,15 @@ instance. When Neo4j is not reachable (e.g. running tests without Docker),
 those tests are automatically skipped with a clear message rather than failing.
 """
 
+from __future__ import annotations
+
+import os
+
 import pytest
+
+# Avoid OTLP export noise / retries when Jaeger is not running during unit tests.
+# Journey tests attach an InMemorySpanExporter to the same TracerProvider.
+os.environ.setdefault("OTEL_TRACES_ENABLED", "false")
 
 
 def _neo4j_reachable() -> bool:

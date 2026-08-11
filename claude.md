@@ -1,7 +1,7 @@
 # Miragent workstream notes
 
-**Latest:** W1-CON-01 Console shell — **Complete**  
-**Complete stack:** W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
+**Latest:** W1-PLT-06 Observability baseline — **Complete**  
+**Complete stack:** W1-PLT-06 · W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
 
 ---
 
@@ -18,6 +18,8 @@ Browser / Postman
                                                          │
                                                          └─ schema src_zendesk
                                                             (live dump data)
+
+   :16686 Jaeger UI  ◄── OTLP :4318 ──  Console API (+ emulator) traces
 ```
 
 | Port | Service | Ticket |
@@ -27,12 +29,116 @@ Browser / Postman
 | **8090** | Console FastAPI | W1-API-01 |
 | **8080** | Console UI (compose/nginx) | W1-CON-01 |
 | **5173** | Console UI (Vite dev) | W1-CON-01 |
+| **16686** | Jaeger UI (trace viewer) | W1-PLT-06 |
+| **4318** | OTLP HTTP collector | W1-PLT-06 |
 
 **Keep ports separate** — emulator ≠ console API. They share Postgres only.
 
 **Compose files:**
 - `docker-compose.zendesk-emulator.yml` — Postgres only (emulator DSN host port 5433)
-- `docker-compose.console.yml` — Postgres + console API + console UI
+- `docker-compose.console.yml` — Jaeger + Postgres + console API + console UI
+
+---
+---
+
+# W1-PLT-06 — Observability baseline
+
+**Status:** Complete  
+**Location:** `scout/observability/`  
+**Tests:** `tests/observability/test_observability.py` (5 tests passing)  
+**Depends on:** W1-API-01 FastAPI skeleton; Postgres with `src_zendesk`  
+**Done when:** one `trace_id` follows a ticket from ingest → agents → console and is visible in Jaeger
+
+---
+
+## What this work is
+
+Structured JSON logging + OpenTelemetry tracing with **`run_id` and `trace_id` propagated end-to-end**. Week-three debugging and the locked “explainability from day one” decision both depend on this — not a week-four bolt-on.
+
+---
+
+## What was delivered
+
+| Piece | Detail |
+|--------|--------|
+| JSON logging | One JSON object per line; includes `run_id` / `trace_id` / `ticket_id` when bound |
+| Context | `contextvars` bind for the request (`scout/observability/context.py`) |
+| OTel tracing | TracerProvider → OTLP HTTP (`OTEL_EXPORTER_OTLP_ENDPOINT`, default `:4318`) |
+| Middleware | ASGI: accept `X-Run-Id` / `X-Ticket-Id`; echo `X-Run-Id` / `X-Trace-Id` / `X-Ticket-Id` |
+| Journey path | `GET /tickets/{id}/journey` — ingest → stub agents → console payload, one shared trace |
+| Jaeger | `jaegertracing/all-in-one` in `docker-compose.console.yml` (UI `:16686`) |
+| Emulator | Same middleware + tracing on Zendesk emulator for ingest-side correlation |
+
+### Journey spans (one `trace_id`)
+
+```
+ticket.journey
+  ├─ ticket.ingest
+  ├─ agent.context
+  ├─ agent.recommend
+  └─ console.response
+```
+
+### Headers / body
+
+| Field | Where |
+|--------|--------|
+| `X-Run-Id` | Request (optional) + response |
+| `X-Trace-Id` | Response (32-char hex) |
+| `X-Ticket-Id` | Request (optional) + response |
+| `run_id` / `trace_id` | Journey JSON body (console-visible) |
+
+---
+
+## Where it lives
+
+```
+scout/observability/
+  __init__.py
+  context.py      # run_id / trace_id / ticket_id contextvars
+  logging.py      # JsonFormatter + configure_json_logging
+  tracing.py      # init_tracing, start_span, instrument_fastapi
+  middleware.py   # ObservabilityMiddleware (ASGI)
+
+scout/service/
+  journey.py      # ingest → agents → console demo path
+  routes.py       # GET /tickets/{ticket_id}/journey
+  app.py          # wires logging + OTel + middleware
+
+tests/observability/test_observability.py
+docker-compose.console.yml   # + jaeger service
+Dockerfile.api               # + otel packages + observability copy
+```
+
+---
+
+## How to verify
+
+```powershell
+# Jaeger + Postgres (or full console stack)
+docker compose -f docker-compose.console.yml up -d jaeger postgres
+
+# Console API pointing at Jaeger OTLP
+$env:ZENDESK_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+$env:OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:4318"
+$env:OTEL_SERVICE_NAME="miragent-console-api"
+poetry run uvicorn scout.service.app:create_app --factory --reload --port 8090
+
+# Pick a live ticket id, then:
+# GET http://localhost:8090/tickets/<id>/journey
+# Headers: X-Run-Id: demo-run-001
+# Open http://localhost:16686 → service miragent-console-api → find that trace_id
+```
+
+```powershell
+poetry run pytest tests/observability tests/service -v
+```
+
+---
+
+## Status
+
+**W1-PLT-06 — Observability baseline: Complete**
 
 ---
 ---
@@ -432,5 +538,6 @@ tests/shared/
 | **W1-SRC-05** | Zendesk emulator API (+ Postgres) | Complete |
 | **W1-API-01** | FastAPI console skeleton | Complete |
 | **W1-CON-01** | Console shell (React/Vite/Tailwind) | Complete |
+| **W1-PLT-06** | Observability baseline (JSON logs + OTel + Jaeger) | Complete |
 
 **Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-four write-back.

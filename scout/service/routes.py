@@ -1,4 +1,4 @@
-"""Probe and corpus routes."""
+"""Probe, corpus, and observability journey routes."""
 
 from __future__ import annotations
 
@@ -6,9 +6,11 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from scout.observability.context import bind_context, get_context
 from scout.service.corpus import fetch_corpus_stats
 from scout.service.deps import DatabaseDep
 from scout.service.errors import AppError
+from scout.service.journey import run_ticket_journey
 
 router = APIRouter(tags=["system"])
 
@@ -65,3 +67,21 @@ def corpus_stats(db: DatabaseDep) -> dict[str, Any]:
     All values are read from Postgres — never stubs.
     """
     return fetch_corpus_stats(db)
+
+
+@router.get("/tickets/{ticket_id}/journey", tags=["observability"])
+def ticket_journey(ticket_id: str, db: DatabaseDep) -> dict[str, Any]:
+    """
+    W1-PLT-06 demo path: ingest → stub agents → console payload.
+
+    One ``run_id`` / ``trace_id`` follows the ticket through nested spans.
+    Pass ``X-Run-Id`` / ``X-Ticket-Id`` to continue an existing run.
+    """
+    # Ensure ticket_id is on the bound context for every log line in this call
+    ctx = get_context()
+    bind_context(
+        run_id=ctx.run_id if ctx else None,
+        ticket_id=ticket_id,
+        trace_id=ctx.trace_id if ctx else None,
+    )
+    return run_ticket_journey(db, ticket_id)

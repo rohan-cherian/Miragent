@@ -52,6 +52,11 @@ python-docx = "^1.2.0"
 pyotp = "^2.9.0"
 qrcode = {extras = ["pil"], version = "^8.2"}
 psycopg = {version = ">=3.1", extras = ["binary"]}
+opentelemetry-api = "^1.44.0"
+opentelemetry-sdk = "^1.44.0"
+opentelemetry-exporter-otlp-proto-http = "^1.44.0"
+opentelemetry-instrumentation-fastapi = "^0.65b0"
+opentelemetry-instrumentation-asgi = "^0.65b0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"              # test runner
 pytest-asyncio = "^0.23"     # async test support

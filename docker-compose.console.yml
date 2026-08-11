@@ -1,14 +1,26 @@
-# Console MVP stack (W1-CON-01 + W1-API-01 + Postgres)
+# Console MVP stack (W1-CON-01 + W1-API-01 + W1-PLT-06 + Postgres)
 #
 #   docker compose -f docker-compose.console.yml up -d --build
 #   Open http://localhost:8080  (console)
 #   API via same origin /api/* → FastAPI :8090 inside the network
+#   Jaeger UI: http://localhost:16686  (search service miragent-console-api)
 #
 # First-time data load (host):
 #   poetry run python scripts/load_zendesk_postgres.py
 #   (DSN: postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent)
 
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: miragent_jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI (trace viewer)
+      - "4318:4318"     # OTLP HTTP (host apps → Jaeger)
+      - "4317:4317"     # OTLP gRPC
+
   postgres:
     image: postgres:16
     container_name: zendesk_emulator_postgres
@@ -38,11 +50,16 @@ services:
       ZENDESK_DATABASE_URL: postgresql://zendesk_admin:zendesk_dev@postgres:5432/zendesk_agent
       API_DATABASE_URL: postgresql://zendesk_admin:zendesk_dev@postgres:5432/zendesk_agent
       CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173
+      OTEL_SERVICE_NAME: miragent-console-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_ENABLED: "true"
     ports:
       - "8090:8090"
     depends_on:
       postgres:
         condition: service_healthy
+      jaeger:
+        condition: service_started
 
   console:
     build:

@@ -63,11 +63,20 @@ def create_zendesk_app(
 
     Requires live Postgres when ``store`` is not injected.
     """
+    from scout.observability.logging import configure_json_logging
+    from scout.observability.middleware import install_observability_middleware
+    from scout.observability.tracing import init_tracing, instrument_fastapi
+
+    configure_json_logging()
+    init_tracing(service_name="miragent-zendesk-emulator")
+
     app = FastAPI(
         title="Zendesk API Emulator",
         version="0.1.0",
         docs_url="/docs",
     )
+    install_observability_middleware(app)
+    instrument_fastapi(app, service_name="miragent-zendesk-emulator")
 
     if store is None:
         store = create_store(database_url=database_url)

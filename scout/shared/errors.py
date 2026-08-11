@@ -5,8 +5,8 @@ Salesforce error bodies are not Zendesk error bodies. Emulators must return
 the real vendor JSON shape so connector error handling can be tested against
 realistic responses — not a generic ``{"detail": "..."}`` wrapper.
 
-Supported vendors (the six emulator targets):
-  salesforce, zendesk, jira, entra, servicenow, okta
+Supported vendors (emulator targets):
+  salesforce, zendesk, jira, entra, servicenow, okta, workday
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ class Vendor(str, Enum):
     ENTRA = "entra"
     SERVICENOW = "servicenow"
     OKTA = "okta"
+    WORKDAY = "workday"
 
 
 class ErrorKind(str, Enum):
@@ -71,6 +72,7 @@ def build_error_body(
         Vendor.ENTRA: _entra_body,
         Vendor.SERVICENOW: _servicenow_body,
         Vendor.OKTA: _okta_body,
+        Vendor.WORKDAY: _workday_body,
     }
     return builders[vendor](kind, message)
 
@@ -312,4 +314,45 @@ def _okta_body(kind: ErrorKind, message: str | None) -> dict[str, Any]:
         "errorLink": code,
         "errorId": uuid.uuid4().hex[:20],
         "errorCauses": [],
+    }
+
+
+# ── Workday (RaaS / REST-style) ──────────────────────────────────────────────
+# Common JSON fault shape used by custom report / OAuth failure paths:
+#   { "error": "<code>", "error_description": "..." }
+
+
+_WD_CODES: dict[ErrorKind, tuple[str, str]] = {
+    ErrorKind.UNAUTHORIZED: (
+        "invalid.authentication",
+        "Authentication failure: invalid or missing credentials",
+    ),
+    ErrorKind.FORBIDDEN: (
+        "insufficient.privileges",
+        "You do not have permission to run this report",
+    ),
+    ErrorKind.NOT_FOUND: (
+        "report.not.found",
+        "The requested report does not exist",
+    ),
+    ErrorKind.BAD_REQUEST: (
+        "invalid.request",
+        "The request is invalid",
+    ),
+    ErrorKind.RATE_LIMITED: (
+        "request.limit.exceeded",
+        "Too many requests — retry later",
+    ),
+    ErrorKind.SERVER_ERROR: (
+        "processing.error",
+        "An unexpected error occurred while processing the report",
+    ),
+}
+
+
+def _workday_body(kind: ErrorKind, message: str | None) -> dict[str, Any]:
+    code, default_msg = _WD_CODES[kind]
+    return {
+        "error": code,
+        "error_description": message or default_msg,
     }

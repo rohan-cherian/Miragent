@@ -35,6 +35,11 @@ infra/volumes/
 *.sqlite
 *.sqlite3
 
+# Large vendor SQL dumps — keep local only (GitHub / PR size limits)
+# Workday: ~229 MB — load with: poetry run python scripts/load_workday_postgres.py
+schema/dump-ITR_PORTAL-*.sql
+schema/**/dump-*.sql
+
 # Logs
 logs/
 

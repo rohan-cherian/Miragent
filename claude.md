@@ -1,7 +1,7 @@
 # Miragent workstream notes
 
-**Latest:** W1-PLT-06 Observability baseline — **Complete**  
-**Complete stack:** W1-PLT-06 · W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
+**Latest:** W1-SRC-06 Workday emulator API — **Complete**  
+**Complete stack:** W1-SRC-06 · W1-PLT-06 · W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
 
 ---
 
@@ -14,29 +14,111 @@ Browser / Postman
    │                                                    │
    ├─ :5173  Console Vite (dev)     ──/api/*──►        │
    │                                                    ▼
-   └─ :8081  Zendesk emulator (W1-SRC-05) ────────► Postgres :5433
-                                                         │
-                                                         └─ schema src_zendesk
-                                                            (live dump data)
+   ├─ :8081  Zendesk emulator (W1-SRC-05) ────────► Postgres :5433
+   │                                                    │
+   └─ :8082  Workday RaaS emulator (W1-SRC-06) ─────►   ├─ src_zendesk
+                                                        └─ src_workday
 
-   :16686 Jaeger UI  ◄── OTLP :4318 ──  Console API (+ emulator) traces
+   :16686 Jaeger UI  ◄── OTLP :4318 ──  Console API (+ emulators) traces
 ```
 
 | Port | Service | Ticket |
 |------|---------|--------|
-| **5433** | Postgres (`src_zendesk`) | shared data |
+| **5433** | Postgres (`src_zendesk` + `src_workday`) | shared data |
 | **8081** | Zendesk emulator | W1-SRC-05 |
+| **8082** | Workday RaaS emulator | W1-SRC-06 |
 | **8090** | Console FastAPI | W1-API-01 |
 | **8080** | Console UI (compose/nginx) | W1-CON-01 |
 | **5173** | Console UI (Vite dev) | W1-CON-01 |
 | **16686** | Jaeger UI (trace viewer) | W1-PLT-06 |
 | **4318** | OTLP HTTP collector | W1-PLT-06 |
 
-**Keep ports separate** — emulator ≠ console API. They share Postgres only.
+**Keep ports separate** — emulator ≠ console API. Emulators share Postgres only.
 
 **Compose files:**
-- `docker-compose.zendesk-emulator.yml` — Postgres only (emulator DSN host port 5433)
+- `docker-compose.zendesk-emulator.yml` — Postgres only (host port 5433)
 - `docker-compose.console.yml` — Jaeger + Postgres + console API + console UI
+
+---
+---
+
+# W1-SRC-06 — Workday emulator API
+
+**Status:** Complete  
+**Location:** `scout/emulators/workday/`  
+**Tests:** `tests/emulators/test_workday_emulator.py` (12 tests passing)  
+**Depends on:** `scout/shared/` (W1-SRC-04); Postgres dump `schema/dump-ITR_PORTAL-202608071347.sql` → `src_workday`
+
+---
+
+## What this work is
+
+**Report-as-a-Service style extract endpoints** — the second system feeding the canonical model. The critical detail: Workday returns **different column names** depending on how a report was configured. The emulator serves **both variants deliberately** so week-two reconciliation exercises a real translation problem (not a trivial one).
+
+---
+
+## What was delivered
+
+| Piece | Detail |
+|--------|--------|
+| RaaS routes | `GET /ccx/service/customreport2/{tenant}/{report}` → `{ "Report_Entry": [...] }` |
+| Catalog | `GET /ccx/service/customreport2/{tenant}` lists dual-variant reports |
+| Worker variants | `Worker_Census` ↔ `Worker_Directory` (same people, different keys) |
+| Org variants | `Organization_Hierarchy` ↔ `Org_Structure` |
+| Canonical mapper | `normalize_worker_entry` / `normalize_organization_entry` — both → one shape |
+| Shared gates | AuthStub · ChaosSwitch · account rate limit · Workday error envelope |
+| Postgres | Live `src_workday` via `WORKDAY_DATABASE_URL` (fallback `ZENDESK_DATABASE_URL`) |
+| Load script | `scripts/load_workday_postgres.py` (requires `psql`, ~230 MB dump) |
+
+### Dual columns (workers)
+
+| Canonical | Census (`Worker_Census`) | Directory (`Worker_Directory`) |
+|-----------|--------------------------|--------------------------------|
+| `worker_id` | `Employee_ID` | `Worker` |
+| `first_name` | `Legal_Name_-_First_Name` | `First_Name` |
+| `email` | `primaryWorkEmail` | `Email_-_Work` |
+| `title` | `CF_Business_Title` | `Job_Title` |
+| `is_active` | `isActive` (bool) | `Active_Status` (`"1"`/`"0"`) |
+
+Done criterion: a client maps **both** report payloads to the **same** canonical rows.
+
+---
+
+## Where it lives
+
+```
+scout/emulators/workday/
+  __init__.py · app.py · base.py · factory.py
+  store.py · postgres_store.py · reports.py
+
+schema/dump-ITR_PORTAL-202608071347.sql
+scripts/load_workday_postgres.py
+tests/emulators/test_workday_emulator.py
+```
+
+---
+
+## How to run
+
+```powershell
+docker compose -f docker-compose.zendesk-emulator.yml up -d
+poetry run python scripts/load_workday_postgres.py   # first time; needs psql
+$env:WORKDAY_DATABASE_URL="postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+poetry run uvicorn scout.emulators.workday.app:create_workday_app --factory --reload --port 8082
+```
+
+```powershell
+poetry run pytest tests/emulators/test_workday_emulator.py -v
+```
+
+Call with `Authorization: Bearer <any-token>`.  
+Example: `GET http://localhost:8082/ccx/service/customreport2/acme/Worker_Census?format=json`
+
+---
+
+## Status
+
+**W1-SRC-06 — Workday emulator API: Complete**
 
 ---
 ---
@@ -536,8 +618,9 @@ tests/shared/
 |--------|-------------|--------|
 | **W1-SRC-04** | Shared emulator plumbing | Complete |
 | **W1-SRC-05** | Zendesk emulator API (+ Postgres) | Complete |
+| **W1-SRC-06** | Workday RaaS emulator (dual column variants) | Complete |
 | **W1-API-01** | FastAPI console skeleton | Complete |
 | **W1-CON-01** | Console shell (React/Vite/Tailwind) | Complete |
 | **W1-PLT-06** | Observability baseline (JSON logs + OTel + Jaeger) | Complete |
 
-**Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-four write-back.
+**Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-two reconciliation against dual Workday columns · week-four write-back.

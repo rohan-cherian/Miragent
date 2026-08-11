@@ -113,6 +113,18 @@ class TestOktaEnvelope:
         assert "errorId" in body
 
 
+class TestWorkdayEnvelope:
+    def test_error_and_description(self):
+        body = build_error_body(Vendor.WORKDAY, ErrorKind.UNAUTHORIZED)
+        assert body["error"] == "invalid.authentication"
+        assert "error_description" in body
+        assert "errorCode" not in body  # Okta shape, not Workday
+
+    def test_report_not_found(self):
+        body = build_error_body(Vendor.WORKDAY, ErrorKind.NOT_FOUND)
+        assert body["error"] == "report.not.found"
+
+
 class TestErrorResponse:
     def test_returns_json_response_with_default_status(self):
         resp = error_response(Vendor.ZENDESK, ErrorKind.RATE_LIMITED)

@@ -12,6 +12,10 @@ build/
 .env.*.local
 *.env
 
+# Gmail OAuth tokens (Desktop login output)
+secrets/
+**/gmail_token.json
+
 # Testing
 .pytest_cache/
 .coverage

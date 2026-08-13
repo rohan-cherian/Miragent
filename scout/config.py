@@ -119,6 +119,18 @@ class Settings(BaseSettings):
     sf_client_secret: str = ""    # Consumer Secret from Connected App
     sf_instance_url: str = "https://login.salesforce.com"  # or sandbox: test.salesforce.com
 
+    # ── Gmail integration (Desktop OAuth + polling sync) ─────────────────────
+    gmail_client_id: str = ""
+    gmail_client_secret: str = ""
+    gmail_user: str = "me"
+    gmail_redirect_uri: str = "http://127.0.0.1:8089/"
+    gmail_refresh_token: str = ""
+    gmail_token_path: str = "secrets/gmail_token.json"
+    gmail_database_url: str = (
+        "postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
+    )
+    gmail_scopes: str = "https://www.googleapis.com/auth/gmail.readonly"
+
     # ── Convenience properties ────────────────────────────
     @property
     def is_development(self) -> bool:

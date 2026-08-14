@@ -59,6 +59,7 @@ def main() -> int:
         f"mailbox={result.mailbox} mode={result.mode} "
         f"fetched={result.fetched} inserted={result.inserted} "
         f"skipped_dupes={result.skipped_duplicates} "
+        f"skipped_non_customer={result.skipped_non_customer} "
         f"history_id={result.history_id} "
         f"total_tickets={store.count_tickets(mailbox)}"
     )

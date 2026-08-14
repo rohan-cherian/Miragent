@@ -12,6 +12,7 @@ import time
 from collections.abc import Iterator
 from datetime import datetime, timezone
 
+from scout.config import settings
 from scout.connectors.base import ConnectorBase
 from scout.connectors.models import (
     ConnectorCategory,
@@ -23,6 +24,7 @@ from scout.connectors.models import (
 )
 from scout.gmail.auth import GmailTokenStore
 from scout.gmail.client import GmailClient, GmailMessage
+from scout.gmail.customers import gmail_from_query, is_customer_sender, parse_sender_list
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +98,11 @@ class GmailConnector(ConnectorBase):
         if self._client is None and not self.authenticate():
             return
         assert self._client is not None
-        for msg in self._client.fetch_messages(max_results=100, q="in:inbox"):
-            yield self._to_raw(msg)
+        allowed = parse_sender_list(settings.gmail_customer_senders)
+        q = gmail_from_query(allowed)
+        for msg in self._client.fetch_messages(max_results=100, q=q):
+            if is_customer_sender(msg.from_header, allowed):
+                yield self._to_raw(msg)
 
     def extract_incremental(
         self,
@@ -111,14 +116,17 @@ class GmailConnector(ConnectorBase):
         assert self._client is not None
 
         last_ms = int(cursor.checkpoint.get("last_internal_date_ms") or 0)
+        allowed = parse_sender_list(settings.gmail_customer_senders)
+        q = gmail_from_query(allowed)
 
-        messages = self._client.fetch_messages(max_results=100, q="in:inbox")
-        newer = [
+        messages = [
             m
-            for m in messages
-            if m.internal_date_ms is not None and m.internal_date_ms > last_ms
+            for m in self._client.fetch_messages(max_results=100, q=q)
+            if is_customer_sender(m.from_header, allowed)
+            and m.internal_date_ms is not None
+            and m.internal_date_ms > last_ms
         ]
-        max_ms = max((m.internal_date_ms or 0 for m in newer), default=last_ms)
+        max_ms = max((m.internal_date_ms or 0 for m in messages), default=last_ms)
         new_cursor = ExtractionCursor(
             connector_id=self.CONNECTOR_ID,
             entity_type=entity_type,
@@ -127,7 +135,7 @@ class GmailConnector(ConnectorBase):
         )
 
         def _gen() -> Iterator[RawRecord]:
-            for msg in newer:
+            for msg in messages:
                 yield self._to_raw(msg)
 
         return _gen(), new_cursor

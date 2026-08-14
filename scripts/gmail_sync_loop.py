@@ -62,6 +62,7 @@ def main() -> int:
             print(
                 f"[{started}] mode={result.mode} fetched={result.fetched} "
                 f"inserted={result.inserted} dupes={result.skipped_duplicates} "
+                f"non_customer={result.skipped_non_customer} "
                 f"total={store.count_tickets(mailbox)}"
             )
         except KeyboardInterrupt:

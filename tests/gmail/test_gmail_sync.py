@@ -1,12 +1,10 @@
-"""Tests for Gmail ticket sync dedup + cursor (no live Gmail required)."""
+"""Tests for Gmail ticket sync dedup + cursor + customer filter."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
-
-import pytest
 
 from scout.gmail.client import GmailMessage
 from scout.gmail.store import SyncState, TicketRow
@@ -66,11 +64,13 @@ class FakeClient:
         self._messages = messages
         self._history_id = history_id
         self.history_calls = 0
+        self.last_q: str | None = None
 
     def get_profile(self) -> dict:
         return {"emailAddress": "motiveminds.itsupport@gmail.com", "historyId": self._history_id}
 
     def fetch_messages(self, *, max_results: int = 10, q: str | None = None) -> list[GmailMessage]:
+        self.last_q = q
         return self._messages[:max_results]
 
     def fetch_messages_by_ids(self, message_ids: list[str]) -> list[GmailMessage]:
@@ -79,18 +79,23 @@ class FakeClient:
 
     def list_history_message_ids(self, *, start_history_id: str) -> tuple[list[str], str | None]:
         self.history_calls += 1
-        # Second sync: no new messages
         return [], self._history_id
 
 
-def _msg(mid: str, subject: str, ms: int) -> GmailMessage:
+def _msg(
+    mid: str,
+    subject: str,
+    ms: int,
+    *,
+    from_header: str = "user@example.com",
+) -> GmailMessage:
     return GmailMessage(
         id=mid,
         thread_id=f"t-{mid}",
         history_id="50",
         internal_date_ms=ms,
         subject=subject,
-        from_header="user@example.com",
+        from_header=from_header,
         to_header="motiveminds.itsupport@gmail.com",
         snippet=subject,
         body_text=f"Body of {subject}",
@@ -100,8 +105,8 @@ def _msg(mid: str, subject: str, ms: int) -> GmailMessage:
 
 def test_sync_inserts_then_skips_duplicates():
     messages = [
-        _msg("m1", "Password Issue", 1000),
-        _msg("m2", "Invoice", 2000),
+        _msg("m1", "Password Issue", 1000, from_header="Vihaan <motiveminds.vihaan@gmail.com>"),
+        _msg("m2", "Invoice", 2000, from_header="Jennifer <motiveminds.jennifer@gmail.com>"),
     ]
     store = FakeStore()
     client = FakeClient(messages)
@@ -109,10 +114,11 @@ def test_sync_inserts_then_skips_duplicates():
     first = run_sync(client=client, store=store, mailbox="motiveminds.itsupport@gmail.com")
     assert first.inserted == 2
     assert first.skipped_duplicates == 0
+    assert first.skipped_non_customer == 0
     assert store.state is not None
     assert store.state.last_message_id == "m2"
+    assert client.last_q and "from:motiveminds.vihaan@gmail.com" in client.last_q
 
-    # Same messages again via list mode (clear history so it bootstraps)
     store.state = None
     second = run_sync(client=client, store=store, mailbox="motiveminds.itsupport@gmail.com")
     assert second.inserted == 0
@@ -120,8 +126,24 @@ def test_sync_inserts_then_skips_duplicates():
     assert store.count_tickets() == 2
 
 
+def test_sync_skips_non_customer_senders():
+    messages = [
+        _msg("m1", "Password Issue", 1000, from_header="Vihaan <motiveminds.vihaan@gmail.com>"),
+        _msg("m2", "Noise", 1500, from_header="Rohan <rohancherian289@gmail.com>"),
+        _msg("m3", "Google", 1600, from_header="Google <no-reply@google.com>"),
+    ]
+    store = FakeStore()
+    client = FakeClient(messages)
+    result = run_sync(client=client, store=store, mailbox="motiveminds.itsupport@gmail.com")
+    assert result.inserted == 1
+    assert result.skipped_non_customer == 2
+    assert store.count_tickets() == 1
+
+
 def test_sync_uses_history_when_cursor_present():
-    messages = [_msg("m1", "Check", 1000)]
+    messages = [
+        _msg("m1", "Check", 1000, from_header="Ojasvi <motiveminds.ojasvi@gmail.com>"),
+    ]
     store = FakeStore()
     store.state = SyncState(
         mailbox="motiveminds.itsupport@gmail.com",

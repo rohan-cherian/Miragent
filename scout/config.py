@@ -130,6 +130,12 @@ class Settings(BaseSettings):
         "postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
     )
     gmail_scopes: str = "https://www.googleapis.com/auth/gmail.readonly"
+    # Comma-separated From addresses allowed to become tickets (customer-only sync)
+    gmail_customer_senders: str = (
+        "motiveminds.vihaan@gmail.com,"
+        "motiveminds.jennifer@gmail.com,"
+        "motiveminds.ojasvi@gmail.com"
+    )
 
     # ── Convenience properties ────────────────────────────
     @property

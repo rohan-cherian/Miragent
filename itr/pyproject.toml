@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "itr"
+version = "0.1.0"
+description = "ITR Slice 1 — Gmail → Scout → recommendation"
+authors = ["Miragent <hello@miragent.ai>"]
+package-mode = false
+
+# ─────────────────────────────────────────────────────────
+# RUNTIME DEPENDENCIES
+# Slice 1 only. Kept deliberately lean — no neo4j / clickhouse /
+# weaviate / redis (that is the pre-itr scout package, not this one).
+# ─────────────────────────────────────────────────────────
+[tool.poetry.dependencies]
+python = "^3.11"
+
+pydantic = {extras = ["email"], version = "^2.13.4"}
+pydantic-settings = "^2.0"
+
+# HTTP client — Gmail REST, OpenRouter, OpenAI
+httpx = ">=0.27"
+
+# Postgres — itr360 canonical + src_gmail
+psycopg = {version = ">=3.1", extras = ["binary"]}
+
+# API layer
+fastapi = ">=0.111"
+uvicorn = {version = ">=0.30", extras = ["standard"]}
+python-multipart = ">=0.0.18"
+
+# ─────────────────────────────────────────────────────────
+# DEV-ONLY DEPENDENCIES
+# Never installed in production images
+# ─────────────────────────────────────────────────────────
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-asyncio = "^0.23"
+pytest-cov = "^5.0"
+ruff = "^0.5"
+mypy = "^1.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ─────────────────────────────────────────────────────────
+# RUFF
+# ─────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI puts Depends()/Query() in argument defaults by design
+"scout/api/*" = ["B008"]
+
+# ─────────────────────────────────────────────────────────
+# MYPY
+# ─────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+# ─────────────────────────────────────────────────────────
+# PYTEST
+# pythonpath = ["."] makes `scout` resolve to itr/scout when
+# pytest runs from the itr/ directory.
+# ─────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"

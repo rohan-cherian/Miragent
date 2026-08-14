@@ -16,8 +16,6 @@ from urllib.parse import urlencode
 
 import httpx
 
-from scout.connectors.oauth2 import OAuth2Token
-
 logger = logging.getLogger(__name__)
 
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
@@ -32,14 +30,6 @@ class GmailStoredTokens:
     expires_at: float
     token_type: str = "Bearer"
     scope: str = DEFAULT_SCOPE
-
-    def to_oauth2(self) -> OAuth2Token:
-        return OAuth2Token(
-            access_token=self.access_token,
-            refresh_token=self.refresh_token,
-            expires_at=self.expires_at,
-            token_type=self.token_type,
-        )
 
 
 class GmailTokenStore:

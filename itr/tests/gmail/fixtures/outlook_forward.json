@@ -1,0 +1,33 @@
+{
+  "id": "f-forward",
+  "threadId": "t-f-forward",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Dan Okafor <dan.okafor@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "FW: Invoice query"
+      }
+    ],
+    "body": {
+      "size": 10,
+      "data": "Rm9yd2FyZGluZyB0aGlzIGZvciB5b3VyIHJldmlldy4KCkRhbiBPa2Fmb3IKRmluYW5jZSBMZWFkCmRhbi5va2Fmb3JAbm9ydGh3aW5kLmV4YW1wbGUKCl9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fCkZyb206IEFjY291bnRzIDxhY2NvdW50c0B2ZW5kb3IuZXhhbXBsZT4KU2VudDogMTEgQXVndXN0IDIwMjYgMTY6MDIKVG86IERhbiBPa2Fmb3IKU3ViamVjdDogSW52b2ljZSBxdWVyeQoKVGhlIGF0dGFjaGVkIGludm9pY2UgYXBwZWFycyB1bnBhaWQuCg"
+    },
+    "mimeType": "text/plain"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "f-html",
+  "threadId": "t-f-html",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Ravi Shah <ravi@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "VPN access request"
+      }
+    ],
+    "body": {
+      "size": 10,
+      "data": "PGh0bWw-PGJvZHk-PHA-UGxlYXNlIGdyYW50IG1lIDxiPlZQTjwvYj4gYWNjZXNzLjwvcD48cD5UaGFua3MsPGJyPlJhdmk8L3A-PC9ib2R5PjwvaHRtbD4"
+    },
+    "mimeType": "text/html"
+  }
+}

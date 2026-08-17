@@ -45,19 +45,20 @@ from scout.gmail.envelope import (
     collect_attachment_specs,
     serialise,
 )
+from scout.gmail.mime import parse_message
 from scout.gmail.raw_ledger import GmailRawLedger, RawSyncState
-from scout.raw.keys import (
-    InvalidMessageId,
-    build_attachment_key,
-    build_object_key,
-    partition_date,
-)
 from scout.gmail.store import (
     MessageRow,
     upsert_attachment,
     upsert_mailbox,
     upsert_message,
     upsert_thread,
+)
+from scout.raw.keys import (
+    InvalidMessageId,
+    build_attachment_key,
+    build_object_key,
+    partition_date,
 )
 from scout.raw.minio_client import RawLakeClient
 from scout.raw.runs import connector_run
@@ -249,7 +250,6 @@ class GmailRawSync:
         self,
         *,
         raw_message: dict[str, Any],
-        document: dict[str, Any],
         object_path: str,
         checksum_sha256: str,
         attachments: list[dict[str, Any]],
@@ -270,26 +270,31 @@ class GmailRawSync:
             # No Postgres behind this sync (unit tests, dry runs). Not a
             # failure — there is simply nowhere to upsert.
             return False
-        headers = document.get("headers") or {}
+
+        # Step 4 of the doc's order: parse MIME. Task 7's parser owns every
+        # field below, including the three the raw envelope cannot give —
+        # from_display_name, quoted_stripped and signature_block.
+        parsed = parse_message(raw_message)
         row = MessageRow(
-            external_id=str(document.get("message_id") or ""),
+            external_id=parsed.external_id,
             object_path=object_path,
             checksum_sha256=checksum_sha256,
-            internal_date_ms=int(internal_ms or 0),
-            subject=document.get("subject") or None,
-            from_address=extract_email_address(document.get("from") or "") or None,
-            # from_display_name / quoted_stripped / signature_block are Task 7's
-            # (mime.py). Left unset here rather than guessed.
-            reply_to=extract_email_address(document.get("reply_to") or "") or None,
-            to_addresses=[a for a in (document.get("to") or "").split(",") if a.strip()],
-            cc_addresses=[a for a in (document.get("cc") or "").split(",") if a.strip()],
-            in_reply_to=headers.get("in-reply-to"),
-            references_header=headers.get("references"),
-            list_id=headers.get("list-id"),
-            body_text=document.get("body_text") or document.get("body") or None,
-            body_html_present=bool(document.get("body_html")),
-            history_id=str(document.get("history_id") or "") or None,
-            label_ids=list(document.get("label_ids") or []),
+            internal_date_ms=int(parsed.internal_date_ms or internal_ms or 0),
+            subject=parsed.subject,
+            from_address=parsed.from_address,
+            from_display_name=parsed.from_display_name,
+            reply_to=parsed.reply_to,
+            to_addresses=parsed.to_addresses,
+            cc_addresses=parsed.cc_addresses,
+            in_reply_to=parsed.in_reply_to,
+            references_header=parsed.references_header,
+            list_id=parsed.list_id,
+            body_text=parsed.body_text or None,
+            body_html_present=parsed.body_html_present,
+            quoted_stripped=parsed.quoted_stripped,
+            signature_block=parsed.signature_block,
+            history_id=parsed.history_id,
+            label_ids=parsed.label_ids,
         )
         tenant = settings.tenant_id
         with self.ledger.connect() as conn:
@@ -304,7 +309,7 @@ class GmailRawSync:
                 conn,
                 tenant_id=tenant,
                 connector_run_id=connector_run_id,
-                external_id=str(raw_message.get("threadId") or row.external_id),
+                external_id=parsed.thread_external_id,
                 mailbox_id=mailbox.id,
             )
             message = upsert_message(
@@ -335,7 +340,7 @@ class GmailRawSync:
                 conn,
                 tenant_id=tenant,
                 connector_run_id=connector_run_id,
-                external_id=str(raw_message.get("threadId") or row.external_id),
+                external_id=parsed.thread_external_id,
                 mailbox_id=mailbox.id,
             )
             conn.commit()
@@ -612,7 +617,6 @@ class GmailRawSync:
             try:
                 self.upsert_canonical(
                     raw_message=raw_message,
-                    document=document,
                     object_path=key,
                     checksum_sha256=document["content_sha256"],
                     attachments=attachments,

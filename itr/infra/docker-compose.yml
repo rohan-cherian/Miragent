@@ -1,0 +1,98 @@
+# itr/infra/docker-compose.yml
+#
+# ITR Slice 1 local infra.
+#
+# NOTE: doc's original T3 spec was "postgres + minio + qdrant, no neo4j/redis".
+# MinIO is NOT included here — it's hosted remotely on Oracle Cloud
+# (140.245.252.42:9000), configured via MINIO_ENDPOINT in .env.local.
+# Only Postgres + Qdrant run locally.
+#
+# PORT NOTE (2026-08-17): Host port changed from 5432 -> 5434.
+# Reason: 5432 is already used by (a) native/local Postgres on this
+# machine, and (b) was also colliding conceptually with future ports.
+# Port map for this machine, keep this table updated:
+#   native Postgres        -> host 5432 (not docker)
+#   zendesk-agent stack     -> host 5433 (container port 5432) [STOPPED, not deleted]
+#   itr stack (this file)   -> host 5434 (container port 5432)
+#
+# Bound to 127.0.0.1 only — not reachable from LAN, host-tools only
+# (psql, DBeaver, local scripts). Containers on this same compose network
+# still reach postgres via "postgres:5432" internally — that never changes.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: itr_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: itr
+      POSTGRES_DB: itr
+    ports:
+      - "127.0.0.1:5434:5432"   # <-- CHANGED: was "5432:5432"
+    volumes:
+      - itr_postgres_data:/var/lib/postgresql/data
+      - ./init-schemas.sql:/docker-entrypoint-initdb.d/00-init-schemas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d itr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: itr_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - itr_qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Added ahead of Slice 3 schedule, at Sutej's request ──
+  # Doc's original Slice 1 spec says "no neo4j/redis" — kept here
+  # anyway since nothing in Slice 1 code depends on them yet.
+  neo4j:
+    image: neo4j:5-community
+    container_name: itr_neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/itr_dev1
+      NEO4J_dbms_memory_pagecache_size: 512M
+      NEO4J_dbms_memory_heap_initial__size: 512M
+      NEO4J_dbms_memory_heap_max__size: 1G
+    volumes:
+      - itr_neo4j_data:/data
+      - itr_neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p itr_dev1 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: itr_redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--requirepass", "itr_dev"]
+    volumes:
+      - itr_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a itr_dev ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  itr_postgres_data:
+  itr_qdrant_data:
+  itr_neo4j_data:
+  itr_neo4j_logs:
+  itr_redis_data:

@@ -1,0 +1,749 @@
+openapi: 3.1.0
+info:
+  title: ITR Scout Console API
+  version: "1.0.0"
+  description: >
+    Contract for the ITR Scout Agent console. Describes the real HTTP API
+    that will back the React console currently running on mock data.
+    All shapes here must match src/mock/api.js and src/contracts/state.js
+    exactly — do not redesign or rename fields once frozen.
+
+servers:
+  - url: /api/v1
+
+# ---------------------------------------------------------------------------
+# Reusable parameters / headers
+# ---------------------------------------------------------------------------
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Client-generated UUID. Same key + same body must be safely retryable.
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Optimistic concurrency token (ETag) of the resource being modified.
+    PathId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PathQueueId:
+      name: qid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PathRunId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  headers:
+    X-Trace-Id:
+      description: Correlation id for this request, echoed back on every response.
+      schema:
+        type: string
+
+  # -------------------------------------------------------------------------
+  # Shared error bodies
+  # -------------------------------------------------------------------------
+  responses:
+    Conflict409:
+      description: >
+        Conflict — resource was modified since the caller's If-Match token,
+        or a duplicate submission was detected outside the idempotency window.
+      headers:
+        X-Trace-Id:
+          $ref: '#/components/headers/X-Trace-Id'
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error, by, at]
+            properties:
+              error:
+                type: string
+                example: "version_conflict"
+              by:
+                type: string
+                description: Identifier of the actor/process that made the conflicting change.
+              at:
+                type: string
+                format: date-time
+    UnprocessableEntity422:
+      description: Validation error.
+      headers:
+        X-Trace-Id:
+          $ref: '#/components/headers/X-Trace-Id'
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [field, min]
+            properties:
+              field:
+                type: string
+                example: "decision_note"
+              min:
+                type: integer
+                description: Minimum required value/length that was violated.
+                example: 1
+
+  # -------------------------------------------------------------------------
+  # Enums
+  # -------------------------------------------------------------------------
+  schemas:
+    CaseStatus:
+      type: string
+      enum: [new, open, pending, hold, solved, closed]
+
+    DecisionState:
+      type: string
+      enum:
+        - draft_pending
+        - in_review
+        - approved
+        - edited_approved
+        - rejected
+        - redrafted
+        - superseded
+
+    WriteState:
+      type: string
+      enum: [not_started, queued, executing, retrying, succeeded, failed]
+
+    TriageBand:
+      type: string
+      enum: [high, medium, low, needs_human_triage]
+
+    # -----------------------------------------------------------------------
+    # Citation DTO — used inside TriageResult, ContextPack, Recommendation
+    # -----------------------------------------------------------------------
+    Citation:
+      type: object
+      required: [source_system, source_type, object_id, excerpt, source_ts, deep_link, access_status]
+      properties:
+        source_system:
+          type: string
+          example: "zendesk"
+        source_type:
+          type: string
+          enum: [ticket, comment, article, resolution, graph_path]
+        object_id:
+          type: string
+        excerpt:
+          type: string
+          description: Short quoted/redacted snippet supporting the claim.
+        source_ts:
+          type: string
+          format: date-time
+        deep_link:
+          type: string
+          format: uri
+        access_status:
+          type: string
+          enum: [ok, restricted, missing]
+        relevance:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Optional relevance/similarity score.
+
+    TriageResult:
+      type: object
+      required: [case_id, band, confidence, reasons, citations, generated_at]
+      properties:
+        case_id:
+          type: string
+          format: uuid
+        band:
+          $ref: '#/components/schemas/TriageBand'
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        reasons:
+          type: array
+          items:
+            type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        generated_at:
+          type: string
+          format: date-time
+
+    ContextPack:
+      type: object
+      required: [case_id, summary, citations, trust_filtered, generated_at]
+      properties:
+        case_id:
+          type: string
+          format: uuid
+        summary:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        trust_filtered:
+          type: boolean
+          description: True if ACL trust filter removed one or more candidate chunks.
+        generated_at:
+          type: string
+          format: date-time
+
+    Recommendation:
+      type: object
+      required: [case_id, draft_text, citations, decision_state, generated_at]
+      properties:
+        case_id:
+          type: string
+          format: uuid
+        draft_text:
+          type: string
+          description: >
+            Recommended resolution draft. Must never contain past-tense
+            completed-action claims (e.g. "I have synchronized...").
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        decision_state:
+          $ref: '#/components/schemas/DecisionState'
+        generated_at:
+          type: string
+          format: date-time
+
+    Case:
+      type: object
+      required: [id, status, subject, requester, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CaseStatus'
+        subject:
+          type: string
+        requester:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Connection:
+      type: object
+      required: [id, source_system, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_system:
+          type: string
+          example: "gmail"
+        status:
+          type: string
+          enum: [connected, disconnected, error]
+        last_synced_at:
+          type: string
+          format: date-time
+
+    Run:
+      type: object
+      required: [id, source_system, status, started_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_system:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, succeeded, failed]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+
+    IdentityQueueItem:
+      type: object
+      required: [id, candidate_email, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        candidate_email:
+          type: string
+          format: email
+        candidate_score:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [unresolved, resolved, rejected]
+        created_at:
+          type: string
+          format: date-time
+
+    AuditEntry:
+      type: object
+      required: [id, actor, action, target_id, at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actor:
+          type: string
+        action:
+          type: string
+        target_id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+
+# ---------------------------------------------------------------------------
+# Paths — 19 total
+# ---------------------------------------------------------------------------
+paths:
+
+  /connections:
+    get:
+      summary: List configured source connections
+      operationId: listConnections
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Connection' }
+
+  /runs:
+    get:
+      summary: List ingestion runs
+      operationId: listRuns
+      parameters:
+        - name: source_system
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Run' }
+
+  /runs/{id}:
+    get:
+      summary: Get a single run
+      operationId: getRun
+      parameters:
+        - $ref: '#/components/parameters/PathRunId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '404':
+          description: Not found
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+
+  /runs/{id}/quarantine:
+    get:
+      summary: List quarantined records for a run
+      operationId: getRunQuarantine
+      parameters:
+        - $ref: '#/components/parameters/PathRunId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+
+  /runs/{id}/stream:
+    get:
+      summary: Server-sent events stream of run progress
+      operationId: streamRun
+      parameters:
+        - $ref: '#/components/parameters/PathRunId'
+      responses:
+        '200':
+          description: text/event-stream of run progress events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /stores/metrics:
+    get:
+      summary: Storage layer metrics (Postgres/MinIO/Qdrant)
+      operationId: getStoreMetrics
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /identity/queue:
+    get:
+      summary: List unresolved identity waterfall items
+      operationId: listIdentityQueue
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/IdentityQueueItem' }
+
+  /identity/queue/{qid}/resolve:
+    post:
+      summary: Resolve an identity queue item
+      operationId: resolveIdentityQueueItem
+      parameters:
+        - $ref: '#/components/parameters/PathQueueId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [person_id]
+              properties:
+                person_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Resolved
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityQueueItem' }
+        '409': { $ref: '#/components/responses/Conflict409' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity422' }
+
+  /inbox:
+    get:
+      summary: Unified inbox view
+      operationId: listInbox
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Case' }
+
+  /queue:
+    get:
+      summary: Human triage / review queue
+      operationId: listQueue
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Case' }
+
+  /cases:
+    get:
+      summary: List cases
+      operationId: listCases
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/CaseStatus' }
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Case' }
+
+  /cases/{id}/360:
+    get:
+      summary: 360-degree view of a case
+      operationId: getCase360
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /cases/{id}/timeline:
+    get:
+      summary: Timeline of events for a case
+      operationId: getCaseTimeline
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+
+  /cases/{id}/triage:
+    get:
+      summary: Triage result for a case
+      operationId: getCaseTriage
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TriageResult' }
+
+  /cases/{id}/context-pack:
+    get:
+      summary: Retrieval context pack for a case
+      operationId: getCaseContextPack
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContextPack' }
+
+  /cases/{id}/recommendation:
+    get:
+      summary: Draft recommendation for a case
+      operationId: getCaseRecommendation
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recommendation' }
+
+  /cases/{id}/decision:
+    post:
+      summary: Submit a human decision (approve/reject/edit) on a recommendation
+      operationId: submitDecision
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject, edit]
+                edited_text:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Decision recorded
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recommendation' }
+        '409': { $ref: '#/components/responses/Conflict409' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity422' }
+
+  /cases/{id}/write-execution:
+    get:
+      summary: Get write-execution status for a case
+      operationId: getCaseWriteExecution
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [case_id, state]
+                properties:
+                  case_id:
+                    type: string
+                    format: uuid
+                  state:
+                    $ref: '#/components/schemas/WriteState'
+                  attempts:
+                    type: integer
+                  last_error:
+                    type: string
+
+  /cases/{id}/write-execution/refire:
+    post:
+      summary: Re-trigger a failed write execution
+      operationId: refireWriteExecution
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Refire accepted
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case_id:
+                    type: string
+                    format: uuid
+                  state:
+                    $ref: '#/components/schemas/WriteState'
+        '409': { $ref: '#/components/responses/Conflict409' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity422' }
+
+  /audit:
+    get:
+      summary: List audit entries
+      operationId: listAudit
+      parameters:
+        - name: target_id
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditEntry' }
+
+  /audit/{id}/timeline:
+    get:
+      summary: Full audit timeline for a single target
+      operationId: getAuditTimeline
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditEntry' }

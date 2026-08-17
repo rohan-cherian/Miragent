@@ -70,6 +70,34 @@ def test_multipart_alternative_prefers_text_plain():
     assert m.body_text == "The 3rd floor printer is offline again."
     assert m.body_html_present is True, "the HTML part still exists"
     assert "<i>" not in m.body_text
+    assert m.quoted_stripped is False
+
+
+def test_nested_multipart_is_walked_recursively():
+    """multipart/mixed wrapping multipart/alternative wrapping text/plain."""
+    raw = load("multipart_alternative")
+    inner = raw["payload"]
+    raw["payload"] = {
+        "partId": "",
+        "mimeType": "multipart/mixed",
+        "filename": "",
+        "headers": inner["headers"],
+        "body": {"size": 0},
+        "parts": [dict(inner, partId="0", headers=[])],
+    }
+    m = parse_message(raw)
+    assert m.body_text == "The 3rd floor printer is offline again."
+    assert m.body_html_present is True
+
+
+@pytest.mark.parametrize("shape", ["html_only", "multipart_alternative", "inline_image"])
+def test_shapes_without_a_signature_report_none(shape: str):
+    """The trailing-block heuristic must not invent signatures.
+
+    html_only ends "Thanks, Ravi" — a sign-off, not a signature block. A false
+    positive here would feed noise into the Task 14 identity signal.
+    """
+    assert parse_message(load(shape)).signature_block is None
 
 
 def test_reply_strips_quoted_history_but_keeps_signature(reply: ParsedMessage):

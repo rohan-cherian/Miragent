@@ -61,7 +61,7 @@ def main() -> int:
             print(
                 "No Pub/Sub topic. Set GMAIL_PUBSUB_TOPIC in .env.local or pass --topic\n"
                 "  e.g. projects/my-project/topics/gmail-scout\n\n"
-                "Push is optional - scripts/gmail_raw_sync_loop.py already syncs every 60s.",
+                "Push is optional - scripts/gmail_sync_loop.py already syncs every 60s.",
                 file=sys.stderr,
             )
             return 1

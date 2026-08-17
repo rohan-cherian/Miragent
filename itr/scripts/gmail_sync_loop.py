@@ -8,8 +8,8 @@ poller is what makes the pipeline eventually consistent regardless.
 Ctrl+C to stop.
 
 Usage:
-  poetry run python scripts/gmail_raw_sync_loop.py
-  poetry run python scripts/gmail_raw_sync_loop.py --interval 60 --max 200
+  poetry run python scripts/gmail_sync_loop.py
+  poetry run python scripts/gmail_sync_loop.py --interval 60 --max 200
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
 
 from scout.config import settings
 from scout.gmail.raw_ledger import GmailRawLedger
-from scout.gmail.raw_sync import build_raw_sync
+from scout.gmail.sync import build_raw_sync
 from scout.raw.minio_client import RawLakeClient
 
 

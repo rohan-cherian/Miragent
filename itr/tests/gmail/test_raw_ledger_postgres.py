@@ -8,7 +8,7 @@ incremental cursor behave, and that re-recording is idempotent.
 Skipped automatically when Postgres is not reachable.
 
     docker compose -f docker-compose.zendesk-emulator.yml up -d
-    poetry run python scripts/load_gmail_raw_schema.py
+    poetry run python scripts/load_gmail_schema.py
 """
 
 from __future__ import annotations

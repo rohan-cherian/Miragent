@@ -32,7 +32,7 @@ from psycopg.rows import dict_row
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_SQL = Path(__file__).resolve().parents[2] / "schema" / "003_src_gmail_raw.sql"
+SCHEMA_SQL = Path(__file__).resolve().parents[2] / "schema" / "002_src_gmail_raw.sql"
 
 
 @dataclass

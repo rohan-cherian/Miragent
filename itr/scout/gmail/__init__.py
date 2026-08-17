@@ -2,7 +2,7 @@
 Gmail integration (Desktop OAuth + readonly API).
 
 Raw lake pipeline only:
-  scout.gmail.raw_sync — EVERY message -> JSON -> MinIO raw bucket
+  scout.gmail.sync — EVERY message -> JSON -> MinIO raw bucket
 """
 
 from scout.gmail.auth import (
@@ -21,7 +21,7 @@ from scout.gmail.customers import (
 )
 from scout.gmail.envelope import build_envelope, serialise
 from scout.gmail.raw_ledger import GmailRawLedger, RawSyncState
-from scout.gmail.raw_sync import GmailRawSync, RawSyncResult, build_raw_sync
+from scout.gmail.sync import GmailRawSync, RawSyncResult, build_raw_sync
 
 __all__ = [
     "DEFAULT_CUSTOMER_SENDERS",

@@ -18,7 +18,7 @@ from typing import Any
 import pytest
 
 from scout.gmail.raw_ledger import RawSyncState
-from scout.gmail.raw_sync import GmailRawSync, RawSyncResult
+from scout.gmail.sync import GmailRawSync, RawSyncResult
 from scout.raw.minio_client import PutResult
 
 # ── fakes ─────────────────────────────────────────────────────────────────────

@@ -1,8 +1,8 @@
 """
-Apply schema/003_src_gmail_raw.sql — the raw-lake dedup ledger.
+Apply schema/002_src_gmail_raw.sql — the raw-lake dedup ledger.
 
 Usage:
-  poetry run python scripts/load_gmail_raw_schema.py
+  poetry run python scripts/load_gmail_schema.py
 """
 
 from __future__ import annotations

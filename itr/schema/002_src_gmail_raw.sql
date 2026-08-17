@@ -1,5 +1,5 @@
 -- src_gmail raw-lake bookkeeping — Gmail → MinIO raw bucket
--- Apply: poetry run python scripts/load_gmail_raw_schema.py
+-- Apply: poetry run python scripts/load_gmail_schema.py
 --
 -- NOT the duplicate guard. Per handover doc section 8 the bucket itself is the
 -- authority: the object key is fully derived from the Gmail message ID, so a

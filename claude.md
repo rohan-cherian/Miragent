@@ -22,7 +22,7 @@ Browser / Postman
    :16686 Jaeger UI  ◄── OTLP :4318 ──  Console API (+ emulators) traces
 
    Gmail API ──► :8092 Ingestion API (push) ──┐
-                 scripts/gmail_raw_sync_loop  ├──► MinIO raw bucket :9000
+                 scripts/gmail_sync_loop      ├──► MinIO raw bucket :9000
                                               └──► Postgres src_gmail (ledger)
 ```
 
@@ -170,18 +170,29 @@ watch expires after 7 days, so the poller stays on regardless.
 itr/scout/raw/
   __init__.py · minio_client.py · keys.py
 itr/scout/gmail/
-  envelope.py · raw_ledger.py · raw_sync.py   (+ client.py reworked)
+  envelope.py · raw_ledger.py · sync.py   (+ client.py reworked)
 itr/scout/gmail/ingest_api.py   # push receiver + app factory (moved out of
                                 # scout/api/ — that folder is Sutej's Task 24,
                                 # and the Task 4 lint bans scout.gmail imports there)
-itr/schema/003_src_gmail_raw.sql
+itr/schema/002_src_gmail_raw.sql
 itr/scripts/
-  load_gmail_raw_schema.py · minio_smoke_test.py
-  gmail_raw_sync_once.py · gmail_raw_sync_loop.py · gmail_watch_register.py
+  load_gmail_schema.py · minio_smoke_test.py
+  gmail_sync_once.py · gmail_sync_loop.py · gmail_watch_register.py
 itr/tests/gmail/
-  test_raw_envelope.py · test_raw_keys.py · test_raw_sync.py
+  test_raw_envelope.py · test_raw_keys.py · test_sync.py
   test_raw_ledger_postgres.py
 ```
+
+**Schema numbering** follows the Slice-1 doc, which claims `003` for Task 5
+(`003_src_gmail_regrain.sql`) and `004` for Task 6 (`004_raw_ingest.sql`).
+The raw ledger was renumbered to `002` to leave those free — do not reuse
+`003`/`004` for anything else.
+
+Filenames match the Slice-1 doc where the doc names a genuine equivalent
+(`sync.py`, `gmail_sync_once.py`, `gmail_sync_loop.py`, `load_gmail_schema.py`).
+`envelope.py` and `customers.py` deliberately keep their names: the doc's
+`mime.py` (Task 7) and `filters.py` (Task 8) are different components, not
+renames of these.
 
 ---
 
@@ -195,11 +206,11 @@ deliberately blank and the client fails loudly if they are unset.
 ```powershell
 cd itr
 docker compose -f ..\docker-compose.zendesk-emulator.yml up -d
-poetry run python scripts/load_gmail_raw_schema.py
+poetry run python scripts/load_gmail_schema.py
 poetry run python scripts/minio_smoke_test.py
 
-poetry run python scripts/gmail_raw_sync_once.py --backfill --list   # whole mailbox
-poetry run python scripts/gmail_raw_sync_loop.py --interval 60       # then leave running
+poetry run python scripts/gmail_sync_once.py --backfill --list   # whole mailbox
+poetry run python scripts/gmail_sync_loop.py --interval 60       # then leave running
 ```
 
 Optional push (needs a GCP Pub/Sub topic + public HTTPS endpoint):

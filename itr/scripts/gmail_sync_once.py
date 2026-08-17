@@ -5,14 +5,14 @@ Writes every new message as raw/gmail/YYYY/MM/DD/email_NNN.json.
 Safe to run repeatedly — the ledger guarantees no message is written twice.
 
 Setup (first time):
-  poetry run python scripts/load_gmail_raw_schema.py
+  poetry run python scripts/load_gmail_schema.py
   poetry run python scripts/minio_smoke_test.py
 
 Usage:
-  poetry run python scripts/gmail_raw_sync_once.py
-  poetry run python scripts/gmail_raw_sync_once.py --max 50
-  poetry run python scripts/gmail_raw_sync_once.py --list
-  poetry run python scripts/gmail_raw_sync_once.py --backfill   # walk whole mailbox
+  poetry run python scripts/gmail_sync_once.py
+  poetry run python scripts/gmail_sync_once.py --max 50
+  poetry run python scripts/gmail_sync_once.py --list
+  poetry run python scripts/gmail_sync_once.py --backfill   # walk whole mailbox
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 from scout.config import settings
 from scout.gmail.raw_ledger import GmailRawLedger
-from scout.gmail.raw_sync import build_raw_sync
+from scout.gmail.sync import build_raw_sync
 from scout.raw.minio_client import RawLakeClient
 
 

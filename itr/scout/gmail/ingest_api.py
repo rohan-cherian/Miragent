@@ -37,7 +37,7 @@ from fastapi import APIRouter, BackgroundTasks, FastAPI, Query, Request, Respons
 
 from scout.config import settings
 from scout.gmail.raw_ledger import GmailRawLedger
-from scout.gmail.raw_sync import build_raw_sync
+from scout.gmail.sync import build_raw_sync
 
 logger = logging.getLogger(__name__)
 

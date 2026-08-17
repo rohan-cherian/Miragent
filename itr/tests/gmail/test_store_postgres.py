@@ -94,7 +94,11 @@ def _seed_thread(conn, tenant, run_id, *, thread_ext="t-1"):
 
 
 def test_three_message_conversation_is_one_thread(conn, tenant, run_id):
-    """E1/E2/E3: ONE thread row, message_count 3, three message rows."""
+    """E1/E2/E3: ONE thread row, message_count 3, three message rows.
+
+    Uses only the four upserts — no explicit rollup call — because the doc
+    requires upsert_thread itself to recompute from its child rows.
+    """
     mailbox, thread = _seed_thread(conn, tenant, run_id)
 
     for i, ts in enumerate([1_000, 2_000, 3_000], start=1):
@@ -107,8 +111,14 @@ def test_three_message_conversation_is_one_thread(conn, tenant, run_id):
             message=_msg(f"m-{i}", ts),
         )
 
-    count, first_ms, last_ms = recompute_thread_rollup(conn, thread.id)
-    assert (count, first_ms, last_ms) == (3, 1_000, 3_000)
+    # Re-upserting the thread is what refreshes the rollup.
+    upsert_thread(
+        conn,
+        tenant_id=tenant,
+        connector_run_id=run_id,
+        external_id="t-1",
+        mailbox_id=mailbox.id,
+    )
 
     with conn.cursor() as cur:
         cur.execute(
@@ -124,6 +134,55 @@ def test_three_message_conversation_is_one_thread(conn, tenant, run_id):
         rows = cur.fetchall()
 
     assert rows == [("t-1", 3, 3)], "a 3-message conversation must be ONE thread"
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT first_internal_date_ms, last_internal_date_ms
+                 FROM src_gmail.thread WHERE tenant_id = %s""",
+            (tenant,),
+        )
+        assert cur.fetchone() == (1_000, 3_000)
+
+
+def test_upsert_thread_recomputes_rollup_itself(conn, tenant, run_id):
+    """The doc puts the recompute inside upsert_thread, not on the caller."""
+    mailbox, thread = _seed_thread(conn, tenant, run_id)
+    # A brand-new thread has no children yet, so the rollup starts empty.
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT message_count, first_internal_date_ms, last_internal_date_ms
+                 FROM src_gmail.thread WHERE id = %s""",
+            (thread.id,),
+        )
+        assert cur.fetchone() == (0, None, None)
+
+    for i, ts in enumerate([7_000, 2_000], start=1):
+        upsert_message(
+            conn,
+            tenant_id=tenant,
+            connector_run_id=run_id,
+            thread_id=thread.id,
+            mailbox_id=mailbox.id,
+            message=_msg(f"m-{i}", ts),
+        )
+
+    refreshed = upsert_thread(
+        conn,
+        tenant_id=tenant,
+        connector_run_id=run_id,
+        external_id="t-1",
+        mailbox_id=mailbox.id,
+    )
+    assert refreshed.id == thread.id
+    assert refreshed.was_new is False
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT message_count, first_internal_date_ms, last_internal_date_ms
+                 FROM src_gmail.thread WHERE id = %s""",
+            (thread.id,),
+        )
+        assert cur.fetchone() == (2, 2_000, 7_000)
 
 
 # ── idempotency: zero duplicates, zero field drift ───────────────────────────

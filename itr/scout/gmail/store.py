@@ -190,10 +190,14 @@ def upsert_thread(
     observed_at: datetime | None = None,
     valid_from: datetime | None = None,
 ) -> UpsertResult:
-    """Upsert one thread. ``external_id`` is the Gmail threadId.
+    """Upsert one thread and recompute its rollup. ``external_id`` is the threadId.
 
-    The rollup columns are left to ``recompute_thread_rollup``; call that after
-    the thread's messages are in.
+    message_count, first_internal_date_ms and last_internal_date_ms are always
+    derived from the thread's child message rows before this returns — never
+    supplied by the caller and never incremented. On the initial insert there
+    are no children yet (a message needs its thread_id to exist first), so the
+    rollup lands at 0/NULL/NULL; call this again once the thread's messages are
+    written and the real values appear.
     """
     params = _provenance(
         tenant_id=tenant_id,
@@ -203,7 +207,9 @@ def upsert_thread(
         valid_from=valid_from,
     )
     params.update(external_id=external_id, mailbox_id=str(mailbox_id))
-    return _execute_upsert(conn, _THREAD_SQL, params)
+    result = _execute_upsert(conn, _THREAD_SQL, params)
+    recompute_thread_rollup(conn, result.id)
+    return result
 
 
 def recompute_thread_rollup(

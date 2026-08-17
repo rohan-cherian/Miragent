@@ -49,6 +49,54 @@ class Settings(BaseSettings):
         "motiveminds.ojasvi@gmail.com"
     )
 
+    # ── MinIO / S3 raw lake ───────────────────────────────────────────────────
+    # Slice 1 raw landing zone. S3-compatible, so the same settings point at
+    # real S3 by changing the endpoint and dropping path-style addressing.
+    #
+    # Credentials are deliberately BLANK here — handover doc section 11 forbids
+    # committing them to source. Set them in .env.local (gitignored) or inject
+    # them from the platform's secret store.
+    minio_endpoint: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
+    minio_bucket: str = "raw"
+    minio_region: str = "us-east-1"
+    minio_secure: bool = False  # informational; scheme comes from the endpoint
+    minio_addressing_style: str = "path"  # MinIO needs path-style, not virtual-host
+
+    # ── Gmail → raw lake ingestion ────────────────────────────────────────────
+    # Distinct from the customer-filtered ticket sync above: the raw lake takes
+    # EVERY message, unfiltered. Downstream layers do the filtering.
+    gmail_raw_prefix: str = "gmail"
+    # Path layout. "flat" -> gmail/YYYY/MM/DD/ (single-mailbox POC).
+    # "account" -> gmail/<account_id>/YYYY/MM/DD/ (multi-mailbox).
+    gmail_raw_path_layout: str = "flat"  # flat | account
+    # Which date picks the YYYY/MM/DD folder.
+    # "received" -> the message's Gmail internalDate (stable across re-syncs).
+    # "ingested" -> wall clock at write time.
+    gmail_raw_partition_by: str = "received"  # received | ingested
+    # Handover doc sections 3/7/15: the Gmail message ID IS the object name.
+    # That makes the key fully derivable, so a HEAD on the path is the
+    # duplicate check and no tracking table is needed for correctness.
+    gmail_raw_object_pattern: str = "email_{message_id}.json"
+    # Attachment bytes are inlined base64. Above this size the attachment is
+    # recorded with metadata + sha256 but no bytes (truncated=true).
+    gmail_raw_max_attachment_bytes: int = 26_214_400  # 25 MiB
+    gmail_raw_include_spam_trash: bool = True
+    # Optional Gmail search filter for backfill. Empty = literally all mail.
+    gmail_raw_query: str = ""
+    gmail_raw_page_size: int = 100
+    # Safety cap per run so one invocation cannot spin forever on a huge mailbox.
+    gmail_raw_max_per_run: int = 500
+    # Re-attempt ledger rows stuck in 'pending' after this many seconds.
+    gmail_raw_pending_retry_seconds: int = 300
+
+    # ── Gmail push (Cloud Pub/Sub) ────────────────────────────────────────────
+    # Optional. The 60s poller is the workhorse; push just triggers it sooner.
+    gmail_pubsub_topic: str = ""  # projects/<proj>/topics/<topic>
+    gmail_push_shared_secret: str = ""  # ?token= guard on the push endpoint
+    gmail_push_label_ids: str = ""  # comma-separated; empty = whole mailbox
+
     # ── Action mode ───────────────────────────────────────────────────────────
     # Gate on dispatch_write. Slice 1 ships DRY_RUN; LIVE requires an approved
     # decision and is the only path that reaches GmailAdapter.send_reply().

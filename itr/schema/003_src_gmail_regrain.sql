@@ -22,24 +22,54 @@
 CREATE SCHEMA IF NOT EXISTS src_gmail;
 CREATE EXTENSION IF NOT EXISTS citext;
 
--- ── Cursor table: NOT renamed, deliberately ──────────────────────────────────
--- The doc says "src_gmail.sync_state stays EXACTLY as built" and Task 6 refers
--- to sync_state.history_id. Both refer to a table that still physically exists
--- in this database but belongs to the DELETED ticket-sync pipeline:
+-- ── Cursor table takes the name the doc uses ─────────────────────────────────
+-- The doc calls this table src_gmail.sync_state (Task 5: "stays EXACTLY as
+-- built"; Task 6: "checkpoint sync_state.history_id"). Two tables were in the
+-- way of that name:
 --
 --   src_gmail.sync_state      mailbox · history_id · last_internal_date_ms
 --                             last_message_id · last_synced_at
---                             1 stale row, last written 2026-08-12
+--                             DEAD — cursor of the deleted ticket-sync
+--                             pipeline. Not written since 2026-08-12.
 --
 --   src_gmail.raw_sync_state  account_id · history_id · backfill_done
 --                             backfill_page_token · last_synced_at
 --                             watch_expiration_ms
---                             LIVE — this is the cursor the raw pipeline uses
+--                             LIVE — the raw pipeline's cursor
 --
--- They are different shapes, so raw_sync_state cannot simply take the other's
--- name while it is occupied, and dropping a table with data is not something
--- to do inside a migration without a human deciding. Left alone; the raw
--- pipeline keeps using raw_sync_state until that call is made.
+-- So: park the dead one under sync_state_legacy, then give the live one the
+-- doc's name. A rename rather than a DROP — the legacy row is the only record
+-- of where the old pipeline stopped, it costs one row to keep, and a migration
+-- should not be the thing that destroys data. Drop sync_state_legacy by hand
+-- once nobody wants it.
+--
+-- Both steps are guarded on the shape, not just the name, so this file stays
+-- re-runnable and is a no-op on a database that never had the old pipeline.
+DO $$
+BEGIN
+    -- 1. Vacate the name, keeping the dead cursor's data.
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'src_gmail'
+                  AND table_name = 'sync_state'
+                  AND column_name = 'mailbox')          -- the legacy shape
+       AND NOT EXISTS (SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = 'src_gmail'
+                          AND table_name = 'sync_state_legacy')
+    THEN
+        ALTER TABLE src_gmail.sync_state RENAME TO sync_state_legacy;
+        RAISE NOTICE 'parked dead ticket-sync cursor as src_gmail.sync_state_legacy';
+    END IF;
+
+    -- 2. Live cursor takes the doc's name. Design unchanged — only the name.
+    IF EXISTS (SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'src_gmail' AND table_name = 'raw_sync_state')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = 'src_gmail' AND table_name = 'sync_state')
+    THEN
+        ALTER TABLE src_gmail.raw_sync_state RENAME TO sync_state;
+        RAISE NOTICE 'renamed raw_sync_state -> sync_state (doc name)';
+    END IF;
+END $$;
 
 -- ── The old grain goes ───────────────────────────────────────────────────────
 DROP TABLE IF EXISTS src_gmail.tickets;

@@ -46,7 +46,12 @@ CREATE INDEX IF NOT EXISTS idx_raw_skipped_account
     ON src_gmail.raw_skipped (account_id, seen_at DESC);
 
 -- history_id cursor for the raw pipeline.
-CREATE TABLE IF NOT EXISTS src_gmail.raw_sync_state (
+-- Named sync_state because that is what the Slice-1 doc calls it (Task 5:
+-- "src_gmail.sync_state stays EXACTLY as built"; Task 6 checkpoints
+-- sync_state.history_id). Databases created before that naming carry it as
+-- raw_sync_state; 003 migrates them. The shape below is the one the doc means
+-- by "as built" — it is unchanged, only the name moved.
+CREATE TABLE IF NOT EXISTS src_gmail.sync_state (
     account_id          TEXT PRIMARY KEY,
     history_id          TEXT,
     backfill_done       BOOLEAN NOT NULL DEFAULT FALSE,

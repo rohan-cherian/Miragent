@@ -27,7 +27,7 @@ def main() -> int:
     ledger = GmailRawLedger(settings.gmail_database_url)
     ledger.ensure_schema()
     print("src_gmail ready:")
-    print("  ledger  raw_objects · raw_skipped · raw_sync_state")
+    print("  ledger  raw_objects · raw_skipped · sync_state")
     print("  grain   mailbox · thread · message · attachment")
     return 0
 

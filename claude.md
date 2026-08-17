@@ -64,9 +64,14 @@ Every message in the mailbox — text, HTML, headers, attachments — becomes **
 self-contained JSON document** in the MinIO raw bucket. Unfiltered by design:
 the raw lake takes everything, filtering happens downstream.
 
-This is **separate from the ticket sync** in `scout/gmail/sync.py`, which keeps
-its customer-sender allowlist and its own `src_gmail.sync_state` cursor. The two
-pipelines share only the auth/client layer and must not share a cursor.
+There is **one pipeline and one cursor** now. The separate ticket sync that
+used to run alongside this — with its own allowlist and its own cursor — was
+deleted, and `scout/gmail/sync.py` is the raw sync. The cursor is
+`src_gmail.sync_state`, the name the Slice-1 doc uses (Task 5 "stays EXACTLY
+as built", Task 6 "checkpoint sync_state.history_id"); it was called
+`raw_sync_state` while both pipelines coexisted. The dead pipeline's final
+position is kept in `src_gmail.sync_state_legacy` — one row, safe to drop
+whenever nobody wants it.
 
 ---
 

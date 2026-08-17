@@ -33,9 +33,9 @@ from psycopg.rows import dict_row
 logger = logging.getLogger(__name__)
 
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schema"
-# Applied in order. 003 renames raw_sync_state -> sync_state and adds the Task 5
-# four-table grain, so a fresh database must run both to match what the code
-# queries. Both files are re-runnable.
+# Applied in order. 003 adds the Task 5 four-table grain and migrates older
+# databases whose cursor is still called raw_sync_state, so a fresh database
+# must run both to match what the code queries. Both files are re-runnable.
 SCHEMA_FILES = (
     SCHEMA_DIR / "002_src_gmail_raw.sql",
     SCHEMA_DIR / "003_src_gmail_regrain.sql",
@@ -174,7 +174,7 @@ class GmailRawLedger:
     def get_state(self, account_id: str) -> RawSyncState | None:
         with self.connect() as conn:
             row = conn.execute(
-                "SELECT * FROM src_gmail.raw_sync_state WHERE account_id = %s",
+                "SELECT * FROM src_gmail.sync_state WHERE account_id = %s",
                 (account_id,),
             ).fetchone()
         if not row:
@@ -192,7 +192,7 @@ class GmailRawLedger:
         with self.connect() as conn:
             conn.execute(
                 """
-                INSERT INTO src_gmail.raw_sync_state (
+                INSERT INTO src_gmail.sync_state (
                     account_id, history_id, backfill_done,
                     backfill_page_token, last_synced_at, watch_expiration_ms
                 ) VALUES (%s, %s, %s, %s, %s, %s)

@@ -23,9 +23,11 @@ objects for one email.
 from __future__ import annotations
 
 import logging
+import random
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 import httpx
 
@@ -50,9 +52,52 @@ from scout.raw.keys import (
     build_object_key,
     partition_date,
 )
+from scout.gmail.store import (
+    MessageRow,
+    upsert_attachment,
+    upsert_mailbox,
+    upsert_message,
+    upsert_thread,
+)
 from scout.raw.minio_client import RawLakeClient
+from scout.raw.runs import connector_run
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+_RATE_LIMIT_STATUS = {429, 403}  # Gmail signals quota with either
+_GMAIL_RETRIES = 4
+_GMAIL_BASE_DELAY = 1.0
+
+
+def gmail_retry(what: str, fn: Callable[[], T]) -> T:
+    """Call Gmail, retrying rate limits with exponential backoff and jitter.
+
+    Jitter matters more than the backoff itself here: without it, every worker
+    throttled at the same moment retries at the same moment and the quota is
+    hit again in lockstep.
+    """
+    delay = _GMAIL_BASE_DELAY
+    for attempt in range(1, _GMAIL_RETRIES + 1):
+        try:
+            return fn()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status not in _RATE_LIMIT_STATUS or attempt == _GMAIL_RETRIES:
+                raise
+            sleep_for = delay + random.uniform(0, delay / 2)
+            logger.warning(
+                "Gmail %s rate-limited (%s), attempt %d/%d, sleeping %.1fs",
+                what,
+                status,
+                attempt,
+                _GMAIL_RETRIES,
+                sleep_for,
+            )
+            time.sleep(sleep_for)
+            delay *= 2
+    raise RuntimeError(f"unreachable: {what}")  # pragma: no cover
 
 
 @dataclass
@@ -105,7 +150,11 @@ class GmailRawSync:
         use_ledger_prefilter: bool = True,
         customer_only: bool | None = None,
         customer_senders: str | None = None,
+        run_store: Any = None,
     ) -> None:
+        # Injectable so tests exercise the real connector_run flow without
+        # Postgres; production leaves it None and it is built from the ledger.
+        self.run_store = run_store
         self.client = client
         self.lake = lake
         self.ledger = ledger
@@ -139,6 +188,8 @@ class GmailRawSync:
             else settings.gmail_customer_senders
         )
         self._pending_backfill_token: str | None = None
+        self._run: Any = None
+        self._upsert_failed = False
 
     # ── key building ──────────────────────────────────────────────────────────
 
@@ -193,6 +244,102 @@ class GmailRawSync:
             logger.info("Healed missing ledger row for %s", key)
         except Exception:  # bookkeeping must never break ingestion
             logger.exception("Could not heal ledger row for %s", key)
+
+    def upsert_canonical(
+        self,
+        *,
+        raw_message: dict[str, Any],
+        document: dict[str, Any],
+        object_path: str,
+        checksum_sha256: str,
+        attachments: list[dict[str, Any]],
+        internal_ms: int | None,
+        connector_run_id: str,
+    ) -> bool:
+        """Step 5 of the doc's order: upsert into src_gmail.
+
+        Stores only the object path and the checksum — never the payload. The
+        bytes stay in MinIO, which is what makes replay and audit possible.
+
+        One transaction per message: mailbox -> thread -> message -> attachments,
+        committed together. The caller checkpoints the cursor only after this
+        returns, because a crash between the two would lose the message
+        permanently.
+        """
+        if self.ledger is None or not hasattr(self.ledger, "connect"):
+            # No Postgres behind this sync (unit tests, dry runs). Not a
+            # failure — there is simply nowhere to upsert.
+            return False
+        headers = document.get("headers") or {}
+        row = MessageRow(
+            external_id=str(document.get("message_id") or ""),
+            object_path=object_path,
+            checksum_sha256=checksum_sha256,
+            internal_date_ms=int(internal_ms or 0),
+            subject=document.get("subject") or None,
+            from_address=extract_email_address(document.get("from") or "") or None,
+            # from_display_name / quoted_stripped / signature_block are Task 7's
+            # (mime.py). Left unset here rather than guessed.
+            reply_to=extract_email_address(document.get("reply_to") or "") or None,
+            to_addresses=[a for a in (document.get("to") or "").split(",") if a.strip()],
+            cc_addresses=[a for a in (document.get("cc") or "").split(",") if a.strip()],
+            in_reply_to=headers.get("in-reply-to"),
+            references_header=headers.get("references"),
+            list_id=headers.get("list-id"),
+            body_text=document.get("body_text") or document.get("body") or None,
+            body_html_present=bool(document.get("body_html")),
+            history_id=str(document.get("history_id") or "") or None,
+            label_ids=list(document.get("label_ids") or []),
+        )
+        tenant = settings.tenant_id
+        with self.ledger.connect() as conn:
+            mailbox = upsert_mailbox(
+                conn,
+                tenant_id=tenant,
+                connector_run_id=connector_run_id,
+                external_id=self.account_id,
+                address=self.account_id,
+            )
+            thread = upsert_thread(
+                conn,
+                tenant_id=tenant,
+                connector_run_id=connector_run_id,
+                external_id=str(raw_message.get("threadId") or row.external_id),
+                mailbox_id=mailbox.id,
+            )
+            message = upsert_message(
+                conn,
+                tenant_id=tenant,
+                connector_run_id=connector_run_id,
+                thread_id=thread.id,
+                mailbox_id=mailbox.id,
+                message=row,
+            )
+            for att in attachments:
+                if not att.get("object_path"):
+                    continue  # oversized or failed: no object to point at
+                upsert_attachment(
+                    conn,
+                    tenant_id=tenant,
+                    connector_run_id=connector_run_id,
+                    message_id=message.id,
+                    external_id=str(att.get("attachment_id") or att.get("part_id") or ""),
+                    object_path=str(att["object_path"]),
+                    checksum_sha256=str(att.get("sha256") or ""),
+                    filename=att.get("filename") or None,
+                    mime_type=att.get("mime_type") or None,
+                    size_bytes=int(att.get("size_bytes") or 0),
+                )
+            # Refresh the thread rollup now its children exist.
+            upsert_thread(
+                conn,
+                tenant_id=tenant,
+                connector_run_id=connector_run_id,
+                external_id=str(raw_message.get("threadId") or row.external_id),
+                mailbox_id=mailbox.id,
+            )
+            conn.commit()
+        return True
 
     def _note_skip(self, message_id: str | None, reason: str, detail: str = "") -> None:
         logger.info("Skipping %s: %s %s", message_id, reason, detail)
@@ -255,7 +402,16 @@ class GmailRawSync:
             except httpx.HTTPStatusError as exc:
                 if exc.response is None or exc.response.status_code != 404:
                     raise
+                # Gmail drops historyIds after about a week. Falling back to a
+                # full backfill is the only way to recover — crashing here
+                # would strand the mailbox until someone intervened.
                 logger.warning("Gmail historyId expired — falling back to full list")
+                if self._run is not None:
+                    self._run.note_error(
+                        "history_id_expired",
+                        start_history_id=state.history_id,
+                        action="fell back to full backfill",
+                    )
 
         # Backfill: walk the mailbox, resuming from a stored page token.
         result.mode = "backfill"
@@ -367,7 +523,10 @@ class GmailRawSync:
 
     def ingest_message(self, message_id: str, result: RawSyncResult) -> bool:
         """Write one message. Returns True when an object was PUT."""
-        raw_message = self.client.get_message(message_id, format="full")
+        raw_message = gmail_retry(
+            f"get_message {message_id}",
+            lambda: self.client.get_message(message_id, format="full"),
+        )
 
         # Section 16: malformed data is skipped and logged, never written under
         # a broken or blank name.
@@ -448,6 +607,26 @@ class GmailRawSync:
                 # costs one redundant HEAD next run.
                 logger.exception("Wrote %s but could not record it in the ledger", key)
 
+        # Step 5: canonical upsert. Only the path and checksum, never the bytes.
+        if self._run is not None:
+            try:
+                self.upsert_canonical(
+                    raw_message=raw_message,
+                    document=document,
+                    object_path=key,
+                    checksum_sha256=document["content_sha256"],
+                    attachments=attachments,
+                    internal_ms=internal_ms,
+                    connector_run_id=str(self._run.id),
+                )
+            except Exception as exc:
+                # The object is in the bucket, so nothing is lost — but the
+                # cursor must not advance past a message that never reached
+                # src_gmail, or the incremental path would skip it forever.
+                self._upsert_failed = True
+                result.errors.append(f"{payload_id}: upsert failed: {exc}")
+                logger.exception("Wrote %s but could not upsert into src_gmail", key)
+
         result.written += 1
         result.bytes_written += put.size_bytes
         result.attachments_written += sum(1 for a in attachments if a.get("object_path"))
@@ -466,13 +645,48 @@ class GmailRawSync:
     def run(self) -> RawSyncResult:
         result = RawSyncResult(account_id=self.account_id)
         self._pending_backfill_token = None
+        self._upsert_failed = False
 
-        profile = self.client.get_profile()
-        profile_history = str(profile.get("historyId") or "") or None
         state = self.ledger.get_state(self.account_id) if self.ledger else None
+        # The mode the run will take, known before discovery so the runs row is
+        # accurate from the moment it is inserted.
+        expected_mode = (
+            "history" if (state and state.history_id and state.backfill_done) else "backfill"
+        )
+        run_ctx = connector_run(
+            "gmail",
+            expected_mode,
+            state.history_id if state else None,
+            database_url=getattr(self.ledger, "database_url", None),
+            store=self.run_store,
+        )
+        with run_ctx as run:
+            self._run = run
+            try:
+                return self._run_stages(result, state, run)
+            finally:
+                self._run = None
+
+    def _run_stages(self, result, state, run) -> RawSyncResult:
+        """The seven pipeline stages, in order, with running counts.
+
+        Four of them — redact, normalise, resolve, index — have no work yet
+        (Tasks 12, 13, 14 and 17). They still emit, because the console's
+        Pipeline Scan screen renders all seven and a missing stage reads as a
+        broken pipeline rather than an unbuilt one.
+        """
+        profile = gmail_retry("get_profile", self.client.get_profile)
+        profile_history = str(profile.get("historyId") or "") or None
+        run.stage("connect", 100, f"Connected to Gmail as {self.account_id}")
 
         candidates = self._discover(state, result)
         result.discovered = len(candidates)
+        run.messages_seen = len(candidates)
+        run.stage(
+            "discover",
+            100,
+            f"Discovered {len(candidates)} message(s) in {result.mode} mode",
+        )
 
         todo = candidates
         if self.ledger is not None and self.use_ledger_prefilter and candidates:
@@ -488,15 +702,45 @@ class GmailRawSync:
                 result.skipped_known,
             )
 
-        for message_id in todo:
+        for index, message_id in enumerate(todo, start=1):
             try:
                 self.ingest_message(message_id, result)
             except Exception as exc:
                 message = f"{message_id}: {type(exc).__name__}: {exc}"
                 result.failed += 1
                 result.errors.append(message)
+                run.note_drop(message_id, f"{type(exc).__name__}: {exc}")
                 # Not marked stored, so the next run retries it (section 16).
                 logger.exception("Failed to ingest %s", message_id)
+            if todo and index % 25 == 0:
+                run.stage(
+                    "extract",
+                    int(index * 100 / len(todo)),
+                    f"Extracted {result.written} of {len(todo)} message(s) to the raw lake",
+                )
+
+        run.messages_written = result.written
+        run.messages_skipped = (
+            result.skipped_known
+            + result.skipped_duplicates
+            + result.skipped_non_customer
+            + result.skipped_malformed
+        )
+        run.stage(
+            "extract",
+            100,
+            f"Extracted {result.written} new message(s), "
+            f"{result.skipped_known + result.skipped_duplicates} already stored, "
+            f"{result.attachments_written} attachment(s) written",
+        )
+        run.stage("redact", 100, "PII redaction not wired in Slice 1 (Task 12): 0 documents masked")
+        run.stage(
+            "normalise",
+            100,
+            f"Replicated {result.written} message(s) into src_gmail (Task 13 canonicalises)",
+        )
+        run.stage("resolve", 100, "Identity resolution pending (Task 14): 0 people matched")
+        run.stage("index", 100, "Embedding and indexing pending (Task 17): 0 chunks indexed")
 
         backfill_done = result.backfill_done or bool(state and state.backfill_done)
         # Only advance the history cursor once the backfill has walked the whole
@@ -507,6 +751,11 @@ class GmailRawSync:
             if backfill_done
             else (state.history_id if state else None)
         )
+        # A message that reached MinIO but not src_gmail must not be cursored
+        # past, or the incremental path would never look at it again.
+        if self._upsert_failed:
+            logger.warning("Holding the cursor: at least one src_gmail upsert failed")
+            next_history = state.history_id if state else None
         if self.ledger is not None:
             self.ledger.save_state(
                 RawSyncState(
@@ -522,6 +771,7 @@ class GmailRawSync:
             )
         result.history_id = next_history
         result.backfill_done = backfill_done
+        run.cursor_after = next_history
         return result
 
 

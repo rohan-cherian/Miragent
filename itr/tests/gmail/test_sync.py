@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import base64
 import json
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+import httpx
 import pytest
 
 from scout.gmail.raw_ledger import RawSyncState
@@ -187,11 +189,45 @@ class FakeLedger:
         return {"written": len(self.rows), "skipped": len(self.skips)}
 
 
+class FakeRunStore:
+    """In-memory raw_ingest.runs, so the real connector_run flow is exercised."""
+
+    def __init__(self) -> None:
+        self.runs: dict[str, dict[str, Any]] = {}
+        self.stage_events: list[dict[str, Any]] = []
+
+    def start(self, *, tenant_id, source_system, mode, cursor_before, started_at):
+        run_id = uuid.uuid4()
+        self.runs[str(run_id)] = {
+            "status": "running",
+            "mode": mode,
+            "cursor_before": cursor_before,
+            "source_system": source_system,
+        }
+        return run_id
+
+    def finish(self, run_id, **kw: Any) -> None:
+        self.runs[str(run_id)].update(kw)
+
+    def add_stage_event(self, run_id, **kw: Any) -> None:
+        self.stage_events.append({"run_id": str(run_id), **kw})
+
+    # convenience for assertions
+    @property
+    def last_run(self) -> dict[str, Any]:
+        return list(self.runs.values())[-1]
+
+    @property
+    def stages(self) -> list[str]:
+        return [e["stage"] for e in self.stage_events]
+
+
 def _sync(gmail, ledger, lake, **kw: Any) -> GmailRawSync:
     return GmailRawSync(
         client=gmail,
         ledger=ledger,
         lake=lake,
+        run_store=kw.get("run_store") or FakeRunStore(),
         account_id="support@motiveminds.com",
         prefix="gmail",
         layout="flat",
@@ -645,3 +681,111 @@ def test_repeated_runs_over_growing_mailbox_never_duplicate(runs: int):
     assert len(lake.objects) == len(messages)
     assert len(lake.put_calls) == len(set(lake.put_calls))
     assert sorted(gmail.get_calls) == sorted(messages)
+
+
+# ── Task 6: run tracking, stages, resilience ─────────────────────────────────
+
+
+def test_run_emits_all_seven_stages_in_order():
+    """The console renders all seven; a missing one reads as a broken pipeline."""
+    store = FakeRunStore()
+    gmail = FakeGmail({"m1": _raw_message("m1", ms=1755158400000)})
+    _sync(gmail, FakeLedger(), FakeLake(), run_store=store).run()
+
+    assert store.stages[:2] == ["connect", "discover"]
+    assert set(store.stages) == {
+        "connect", "discover", "extract", "redact", "normalise", "resolve", "index",
+    }
+    assert store.stages[-1] == "index"
+    assert all(0 <= e["progress_pct"] <= 100 for e in store.stage_events)
+    # Log lines are rendered directly in the console, so they must read as
+    # sentences with counts, not debug output.
+    assert all(e["log_line"] and e["log_line"][0].isupper() for e in store.stage_events)
+
+
+def test_run_records_counters_and_cursors():
+    store = FakeRunStore()
+    gmail = FakeGmail({f"m{i}": _raw_message(f"m{i}", ms=1755158400000) for i in range(3)})
+    _sync(gmail, FakeLedger(), FakeLake(), run_store=store).run()
+
+    run = store.last_run
+    assert run["status"] == "success"
+    assert run["mode"] == "backfill"
+    assert run["messages_seen"] == 3
+    assert run["messages_written"] == 3
+    assert run["cursor_after"] == "500"
+
+
+def test_failed_run_is_marked_failed_with_traceback():
+    store = FakeRunStore()
+    gmail = FakeGmail({"m1": _raw_message("m1", ms=1755158400000)})
+
+    def boom() -> dict[str, Any]:
+        raise RuntimeError("gmail unreachable")
+
+    gmail.get_profile = boom  # type: ignore[assignment]
+    with pytest.raises(RuntimeError):
+        _sync(gmail, FakeLedger(), FakeLake(), run_store=store).run()
+
+    run = store.last_run
+    assert run["status"] == "failed"
+    assert any("gmail unreachable" in str(e.get("error", "")) for e in run["errors"])
+    assert any("traceback" in e for e in run["errors"])
+
+
+def test_expired_history_is_recorded_as_history_id_expired():
+    """Doc: record history_id_expired and fall back rather than crashing."""
+    store = FakeRunStore()
+    gmail = FakeGmail({"m1": _raw_message("m1", ms=1755158400000)})
+    gmail.history_error = httpx.HTTPStatusError(
+        "expired", request=httpx.Request("GET", "http://x"),
+        response=httpx.Response(404, request=httpx.Request("GET", "http://x")),
+    )
+    ledger = FakeLedger()
+    ledger.state = RawSyncState(account_id="support@motiveminds.com",
+                                history_id="1985", backfill_done=True)
+
+    result = _sync(gmail, ledger, FakeLake(), run_store=store).run()
+
+    assert result.mode == "backfill", "must fall back to a full backfill"
+    assert any(e.get("reason") == "history_id_expired" for e in store.last_run["errors"])
+
+
+def test_rate_limited_gmail_call_retries_with_jitter(monkeypatch):
+    """429 must back off and retry, not fail the message."""
+    from scout.gmail import sync as sync_mod
+
+    slept: list[float] = []
+    monkeypatch.setattr(sync_mod.time, "sleep", slept.append)
+
+    calls = {"n": 0}
+
+    def flaky() -> str:
+        calls["n"] += 1
+        if calls["n"] < 3:
+            req = httpx.Request("GET", "http://x")
+            raise httpx.HTTPStatusError(
+                "rate", request=req, response=httpx.Response(429, request=req)
+            )
+        return "ok"
+
+    assert sync_mod.gmail_retry("probe", flaky) == "ok"
+    assert calls["n"] == 3
+    assert len(slept) == 2
+    assert slept[1] > slept[0], "delay must grow"
+    # Jitter means the delay is never exactly the base value.
+    assert slept[0] != sync_mod._GMAIL_BASE_DELAY
+
+
+def test_non_rate_limit_error_is_not_retried():
+    from scout.gmail import sync as sync_mod
+
+    req = httpx.Request("GET", "http://x")
+
+    def forbidden() -> str:
+        raise httpx.HTTPStatusError(
+            "bad", request=req, response=httpx.Response(400, request=req)
+        )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        sync_mod.gmail_retry("probe", forbidden)

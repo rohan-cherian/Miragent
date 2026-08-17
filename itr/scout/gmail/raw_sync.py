@@ -1,8 +1,7 @@
 """
 Gmail -> MinIO raw bucket ingestion.
 
-Takes EVERY message in the mailbox (no sender filter — that is the ticket
-sync's job, in scout/gmail/sync.py) and writes one self-contained JSON
+Takes EVERY message in the mailbox and writes one self-contained JSON
 document per email to ``raw/gmail/YYYY/MM/DD/email_<message_id>.json``.
 
 Duplicate handling follows handover doc section 8: the object key is fully
@@ -32,6 +31,12 @@ import httpx
 
 from scout.config import settings
 from scout.gmail.client import GmailClient
+from scout.gmail.customers import (
+    extract_email_address,
+    gmail_from_query,
+    is_customer_sender,
+    parse_sender_list,
+)
 from scout.gmail.envelope import (
     build_attachment_entry,
     build_envelope,
@@ -53,6 +58,7 @@ class RawSyncResult:
     written: int = 0
     skipped_duplicates: int = 0  # HEAD said the object is already there
     skipped_known: int = 0  # ledger pre-filter, no API call spent
+    skipped_non_customer: int = 0  # sender not on the allowlist
     skipped_malformed: int = 0
     failed: int = 0
     attachments_written: int = 0
@@ -66,6 +72,7 @@ class RawSyncResult:
             f"mode={self.mode} discovered={self.discovered} "
             f"written={self.written} "
             f"dupes_skipped={self.skipped_known + self.skipped_duplicates} "
+            f"non_customer={self.skipped_non_customer} "
             f"malformed={self.skipped_malformed} failed={self.failed} "
             f"attachments={self.attachments_written} bytes={self.bytes_written}"
         )
@@ -91,6 +98,8 @@ class GmailRawSync:
         query: str | None = None,
         page_size: int | None = None,
         use_ledger_prefilter: bool = True,
+        customer_only: bool | None = None,
+        customer_senders: str | None = None,
     ) -> None:
         self.client = client
         self.lake = lake
@@ -116,6 +125,14 @@ class GmailRawSync:
         self.query = query if query is not None else settings.gmail_raw_query
         self.page_size = page_size or settings.gmail_raw_page_size
         self.use_ledger_prefilter = use_ledger_prefilter
+        self.customer_only = (
+            customer_only if customer_only is not None else settings.gmail_customer_only
+        )
+        self.allowed_senders = parse_sender_list(
+            customer_senders
+            if customer_senders is not None
+            else settings.gmail_customer_senders
+        )
         self._pending_backfill_token: str | None = None
 
     # ── key building ──────────────────────────────────────────────────────────
@@ -186,6 +203,35 @@ class GmailRawSync:
         except Exception:  # bookkeeping must never break ingestion
             logger.exception("Could not record skip for %s", message_id)
 
+    # ── customer allowlist ────────────────────────────────────────────────────
+
+    def _listing_query(self) -> str | None:
+        """
+        Gmail search string for the backfill listing.
+
+        The allowlist is pushed server-side so a backfill never downloads mail
+        it would only discard. History mode cannot do this — ``history.list``
+        takes no query — so that path filters after fetch instead.
+        """
+        parts = [p for p in (self.query or "").strip().split() if p]
+        if self.customer_only:
+            clause = gmail_from_query(self.allowed_senders)
+            if clause:
+                parts.append(clause)
+        return " ".join(parts) if parts else None
+
+    def _is_customer(self, raw_message: dict[str, Any]) -> tuple[bool, str]:
+        """(allowed, sender_address) for one fetched message."""
+        headers = (raw_message.get("payload") or {}).get("headers") or []
+        from_header = next(
+            (h.get("value", "") for h in headers if str(h.get("name", "")).lower() == "from"),
+            "",
+        )
+        sender = extract_email_address(from_header) or "(unknown)"
+        if not self.customer_only:
+            return True, sender
+        return is_customer_sender(from_header, self.allowed_senders), sender
+
     # ── discovery ─────────────────────────────────────────────────────────────
 
     def _discover(self, state: RawSyncState | None, result: RawSyncResult) -> list[str]:
@@ -206,14 +252,14 @@ class GmailRawSync:
                     raise
                 logger.warning("Gmail historyId expired — falling back to full list")
 
-        # Backfill: walk the whole mailbox, resuming from a stored page token.
+        # Backfill: walk the mailbox, resuming from a stored page token.
         result.mode = "backfill"
         page_token = state.backfill_page_token if state else None
         last_token: str | None = None
         seen: set[str] = set()
         candidates: list[str] = []
         for mid, next_token in self.client.iter_all_message_ids(
-            q=self.query or None,
+            q=self._listing_query(),
             include_spam_trash=self.include_spam_trash,
             page_size=self.page_size,
             limit=budget,
@@ -288,6 +334,14 @@ class GmailRawSync:
         if not payload_id:
             result.skipped_malformed += 1
             self._note_skip(message_id, "malformed", "Gmail response has no message id")
+            return False
+
+        # Customer allowlist. The backfill listing is already filtered
+        # server-side; this catches the history path, which cannot be.
+        allowed, sender = self._is_customer(raw_message)
+        if not allowed:
+            result.skipped_non_customer += 1
+            self._note_skip(payload_id, "non_customer", f"from {sender}")
             return False
 
         internal_raw = raw_message.get("internalDate")

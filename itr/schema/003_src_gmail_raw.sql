@@ -45,9 +45,7 @@ CREATE TABLE IF NOT EXISTS src_gmail.raw_skipped (
 CREATE INDEX IF NOT EXISTS idx_raw_skipped_account
     ON src_gmail.raw_skipped (account_id, seen_at DESC);
 
--- history_id cursor for the raw pipeline. Deliberately separate from
--- src_gmail.sync_state, which the customer-filtered ticket sync owns —
--- the two pipelines must not overwrite each other's cursor.
+-- history_id cursor for the raw pipeline.
 CREATE TABLE IF NOT EXISTS src_gmail.raw_sync_state (
     account_id          TEXT PRIMARY KEY,
     history_id          TEXT,

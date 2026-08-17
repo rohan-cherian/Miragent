@@ -28,7 +28,9 @@ def _b64(text: str) -> str:
     return base64.urlsafe_b64encode(text.encode("utf-8")).decode("ascii").rstrip("=")
 
 
-def _raw_message(mid: str, *, ms: int, attachment: bool = False) -> dict[str, Any]:
+def _raw_message(
+    mid: str, *, ms: int, attachment: bool = False, sender: str | None = None
+) -> dict[str, Any]:
     parts: list[dict[str, Any]] = [
         {
             "partId": "0",
@@ -60,7 +62,7 @@ def _raw_message(mid: str, *, ms: int, attachment: bool = False) -> dict[str, An
             "mimeType": "multipart/mixed",
             "filename": "",
             "headers": [
-                {"name": "From", "value": f"{mid}@example.com"},
+                {"name": "From", "value": sender or f"{mid}@example.com"},
                 {"name": "To", "value": "support@motiveminds.com"},
                 {"name": "Subject", "value": f"Subject {mid}"},
             ],
@@ -194,6 +196,10 @@ def _sync(gmail, ledger, lake, **kw: Any) -> GmailRawSync:
         query="",
         page_size=100,
         use_ledger_prefilter=kw.get("use_ledger_prefilter", True),
+        # Tests default to no allowlist so existing cases keep their meaning;
+        # the allowlist tests opt in explicitly.
+        customer_only=kw.get("customer_only", False),
+        customer_senders=kw.get("customer_senders"),
     )
 
 
@@ -434,10 +440,120 @@ def test_written_object_keeps_full_fidelity_extras():
     assert doc["label_ids"] == ["INBOX"]
 
 
-def test_no_sender_filtering_every_message_is_ingested():
+def test_with_allowlist_off_every_message_is_ingested():
     gmail = FakeGmail({f"m{i}": _raw_message(f"m{i}", ms=AUG14) for i in range(3)})
     ledger, lake = FakeLedger(), FakeLake()
-    assert _sync(gmail, ledger, lake).run().written == 3
+    assert _sync(gmail, ledger, lake, customer_only=False).run().written == 3
+
+
+# ── customer allowlist ────────────────────────────────────────────────────────
+
+VIHAAN = "Vihaan Banerjee <motiveminds.vihaan@gmail.com>"
+JENNIFER = "Jennifer Carter <motiveminds.jennifer@gmail.com>"
+OJASVI = "Ojasvi Goda <motiveminds.ojasvi@gmail.com>"
+ALLOWLIST = (
+    "motiveminds.vihaan@gmail.com,"
+    "motiveminds.jennifer@gmail.com,"
+    "motiveminds.ojasvi@gmail.com"
+)
+
+
+def _mixed_mailbox() -> FakeGmail:
+    return FakeGmail({
+        "c1": _raw_message("c1", ms=AUG14, sender=VIHAAN),
+        "c2": _raw_message("c2", ms=AUG14, sender=JENNIFER),
+        "c3": _raw_message("c3", ms=AUG14, sender=OJASVI),
+        "n1": _raw_message("n1", ms=AUG14, sender="Rohan <rohancherian289@gmail.com>"),
+        "n2": _raw_message("n2", ms=AUG14, sender="Google <no-reply@google.com>"),
+        "n3": _raw_message("n3", ms=AUG14, sender="Us <motiveminds.itsupport@gmail.com>"),
+    })
+
+
+def test_only_customer_mail_is_stored():
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    result = _sync(
+        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
+    ).run()
+
+    assert result.written == 3
+    assert result.skipped_non_customer == 3
+    assert sorted(lake.objects) == [
+        "gmail/2026/08/14/email_c1.json",
+        "gmail/2026/08/14/email_c2.json",
+        "gmail/2026/08/14/email_c3.json",
+    ]
+
+
+def test_non_customer_mail_is_logged_not_silently_dropped():
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    _sync(gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST).run()
+
+    reasons = {s["reason"] for s in ledger.skips}
+    assert reasons == {"non_customer"}
+    assert len(ledger.skips) == 3
+    assert any("rohancherian289@gmail.com" in s["detail"] for s in ledger.skips)
+
+
+def test_own_sent_mail_is_never_stored():
+    """The support mailbox's own outgoing mail must not become customer data."""
+    gmail = FakeGmail({
+        "s1": _raw_message("s1", ms=AUG14, sender="Us <motiveminds.itsupport@gmail.com>")
+    })
+    ledger, lake = FakeLedger(), FakeLake()
+    result = _sync(
+        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
+    ).run()
+    assert result.written == 0
+    assert lake.objects == {}
+
+
+def test_google_security_alert_is_rejected():
+    """Slice-1 Task 8: these must never reach the corpus."""
+    gmail = FakeGmail({
+        "g1": _raw_message("g1", ms=AUG14, sender="Google <no-reply@google.com>")
+    })
+    ledger, lake = FakeLedger(), FakeLake()
+    assert _sync(
+        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
+    ).run().written == 0
+
+
+def test_backfill_pushes_allowlist_into_the_gmail_query():
+    """Server-side filtering — a backfill must not download mail it discards."""
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    sync = _sync(gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST)
+    q = sync._listing_query()
+    assert q is not None
+    assert "from:motiveminds.vihaan@gmail.com" in q
+    assert "from:motiveminds.jennifer@gmail.com" in q
+    assert "from:motiveminds.ojasvi@gmail.com" in q
+
+
+def test_extra_query_is_combined_with_the_allowlist():
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    sync = GmailRawSync(
+        client=gmail, ledger=ledger, lake=lake,
+        account_id="support@motiveminds.com",
+        customer_only=True, customer_senders=ALLOWLIST, query="in:inbox",
+    )
+    q = sync._listing_query()
+    assert "in:inbox" in q and "from:motiveminds.vihaan@gmail.com" in q
+
+
+def test_history_path_filters_after_fetch():
+    """history.list takes no query, so the check must also run per message."""
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    gmail.history_returns_all = True
+    ledger.state = RawSyncState(
+        account_id="support@motiveminds.com", history_id="1", backfill_done=True
+    )
+    result = _sync(
+        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
+    ).run()
+
+    assert result.mode == "history"
+    assert result.written == 3
+    assert result.skipped_non_customer == 3
 
 
 def test_attachment_failure_does_not_lose_the_message():

@@ -41,12 +41,11 @@ class Settings(BaseSettings):
     gmail_database_url: str = (
         "postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
     )
-    gmail_scopes: str = "https://www.googleapis.com/auth/gmail.readonly"
-    # Comma-separated From addresses allowed to become tickets (customer-only sync)
-    gmail_customer_senders: str = (
-        "motiveminds.vihaan@gmail.com,"
-        "motiveminds.jennifer@gmail.com,"
-        "motiveminds.ojasvi@gmail.com"
+    # Task 1: read + send. Space-separated — auth.py urlencodes this as one
+    # `scope` parameter. Send scope is required by the Task 21 ActionExecutor.
+    gmail_scopes: str = (
+        "https://www.googleapis.com/auth/gmail.readonly "
+        "https://www.googleapis.com/auth/gmail.send"
     )
 
     # ── MinIO / S3 raw lake ───────────────────────────────────────────────────
@@ -65,8 +64,7 @@ class Settings(BaseSettings):
     minio_addressing_style: str = "path"  # MinIO needs path-style, not virtual-host
 
     # ── Gmail → raw lake ingestion ────────────────────────────────────────────
-    # Distinct from the customer-filtered ticket sync above: the raw lake takes
-    # EVERY message, unfiltered. Downstream layers do the filtering.
+    # Ingests EVERY mailbox message into MinIO (no sender filter).
     gmail_raw_prefix: str = "gmail"
     # Path layout. "flat" -> gmail/YYYY/MM/DD/ (single-mailbox POC).
     # "account" -> gmail/<account_id>/YYYY/MM/DD/ (multi-mailbox).
@@ -83,8 +81,20 @@ class Settings(BaseSettings):
     # recorded with metadata + sha256 but no bytes (truncated=true).
     gmail_raw_max_attachment_bytes: int = 26_214_400  # 25 MiB
     gmail_raw_include_spam_trash: bool = True
-    # Optional Gmail search filter for backfill. Empty = literally all mail.
+    # Optional extra Gmail search filter for backfill, ANDed with the customer
+    # allowlist below. Empty = no extra restriction.
     gmail_raw_query: str = ""
+
+    # ── Customer allowlist ────────────────────────────────────────────────────
+    # Only mail FROM these senders is stored. Everything else (own sent mail,
+    # Google alerts, personal traffic) is skipped and logged. Entries may be a
+    # full address or a bare "@domain".
+    gmail_customer_only: bool = True
+    gmail_customer_senders: str = (
+        "motiveminds.vihaan@gmail.com,"
+        "motiveminds.jennifer@gmail.com,"
+        "motiveminds.ojasvi@gmail.com"
+    )
     gmail_raw_page_size: int = 100
     # Safety cap per run so one invocation cannot spin forever on a huge mailbox.
     gmail_raw_max_per_run: int = 500

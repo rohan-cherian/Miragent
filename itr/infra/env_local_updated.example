@@ -1,0 +1,89 @@
+# ─────────────────────────────────────────────────────────
+# ITR Scout Agent — Slice 1
+# Copy this file to itr/.env.local and fill in real values.
+# .env.local is gitignored — NEVER commit it.
+# [RS] shared — Rohan fills Gmail block, Sutej fills the rest.
+# ─────────────────────────────────────────────────────────
+
+# ── Gmail — Rohan raises in Google Cloud Console ───────────
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_USER=motiveminds.itsupport@gmail.com
+GMAIL_REDIRECT_URI=http://127.0.0.1:8089/
+GMAIL_REFRESH_TOKEN=
+GMAIL_TOKEN_PATH=secrets/gmail_token.json
+GMAIL_SCOPES=https://www.googleapis.com/auth/gmail.readonly
+GMAIL_CUSTOMER_SENDERS=motiveminds.vihaan@gmail.com,motiveminds.jennifer@gmail.com,motiveminds.ojasvi@gmail.com
+
+# ── Action mode (SAFETY SWITCH) ────────────────────────────
+# draft_only = nothing is ever actually sent/written externally.
+# gated_execute = only reachable after an approved human decision.
+# Do NOT change from draft_only until Tasks 20-23 (human gate + audit) are done.
+# CONFLICT: Rohan's earlier code used DRY_RUN/LIVE — confirm with him
+# which naming wins before Task 22 (dispatch_write).
+ACTION_MODE=draft_only
+
+# ── Connections — Sutej ─────────────────────────────────────
+# CHANGED (2026-08-17): host port 5432 -> 5434.
+# Reason: 5432 was already taken by a native/local Postgres install
+# on this machine, so the itr docker container now binds to 5434
+# on the host side. Container-internal port is still 5432 (unchanged)
+# — this URL is only used when code runs natively on the host
+# (pytest, scripts, Alembic from your shell). If code runs INSIDE
+# a container on the same compose network, use a separate
+# .env.docker with postgresql+psycopg://postgres:itr@postgres:5432/itr
+DATABASE_URL=postgresql+psycopg://postgres:itr@localhost:5434/itr
+
+# MinIO — hosted on Oracle Cloud Compute VM (140.245.252.42), not local docker.
+# Endpoint = host:port only, no http:// prefix.
+# Console (browser UI, not used by code): http://140.245.252.42:9001
+MINIO_ENDPOINT=140.245.252.42:9000
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_SECURE=false
+MINIO_BUCKET_RAW=raw
+
+QDRANT_URL=http://localhost:6333
+
+# ── Tenancy ──────────────────────────────────────────────────
+# TODO: confirm real fixed UUID for Northwind Traders with the team.
+TENANT_ID=00000000-0000-0000-0000-000000000001
+TENANT_NAME=Northwind Traders
+
+# ── Personas — used by seed_personas.py ────────────────────
+PERSONA_1_EMAIL=
+PERSONA_2_EMAIL=
+PERSONA_3_EMAIL=
+
+# ── Thresholds — never hardcode these elsewhere in the codebase ──
+# Sign off with the team before Task 17.
+IDENTITY_APPLY=0.90
+IDENTITY_PROBABLE=0.70
+TRIAGE_ESCALATE=0.75
+TRIAGE_FLOOR=0.60
+RECO_HIGH=0.85
+RECO_MEDIUM=0.60
+RETRIEVAL_FLOOR=0.55
+TOKEN_BUDGET=6000
+REOPEN_WINDOW_DAYS=7
+DUP_WINDOW_HOURS=24
+
+# ── Embeddings — OpenAI DIRECT. OpenRouter has no /embeddings endpoint. ──
+OPENAI_API_KEY=
+EMBED_MODEL=text-embedding-3-large
+EMBED_DIMS=1024
+EMBED_BATCH=128
+
+# ── Reasoning — OpenRouter for everything ──────────────────
+OPENROUTER_API_KEY=
+LLM_COST_CEILING_USD_PER_RUN=5.00
+# NOTE: llm_tiers / agent_tier are Python dicts with sensible defaults
+# already in config.py — they're not simple enough for a single env
+# line, so they're not repeated here. Edit config.py directly if the
+# tier→model mapping needs to change.
+
+# ── Neo4j / Redis — added ahead of Slice 3 schedule ────────
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=itr_dev
+REDIS_URL=redis://:itr_dev@localhost:6379/0

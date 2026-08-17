@@ -32,7 +32,16 @@ from psycopg.rows import dict_row
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_SQL = Path(__file__).resolve().parents[2] / "schema" / "002_src_gmail_raw.sql"
+SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schema"
+# Applied in order. 003 renames raw_sync_state -> sync_state and adds the Task 5
+# four-table grain, so a fresh database must run both to match what the code
+# queries. Both files are re-runnable.
+SCHEMA_FILES = (
+    SCHEMA_DIR / "002_src_gmail_raw.sql",
+    SCHEMA_DIR / "003_src_gmail_regrain.sql",
+)
+# Retained for callers/tests that reference the ledger's own DDL directly.
+SCHEMA_SQL = SCHEMA_FILES[0]
 
 
 @dataclass
@@ -55,9 +64,9 @@ class GmailRawLedger:
         return psycopg.connect(self.database_url, row_factory=dict_row)
 
     def ensure_schema(self) -> None:
-        sql = SCHEMA_SQL.read_text(encoding="utf-8")
         with self.connect() as conn:
-            conn.execute(sql)
+            for path in SCHEMA_FILES:
+                conn.execute(path.read_text(encoding="utf-8"))
             conn.commit()
 
     # ── pre-filter (optimisation only) ────────────────────────────────────────

@@ -1,5 +1,10 @@
 """
-Apply schema/002_src_gmail_raw.sql — the raw-lake dedup ledger.
+Apply the src_gmail schema files, in order:
+
+  002_src_gmail_raw.sql      raw-lake dedup ledger + cursor
+  003_src_gmail_regrain.sql  Task 5 grain: mailbox/thread/message/attachment
+
+Both are re-runnable.
 
 Usage:
   poetry run python scripts/load_gmail_schema.py
@@ -21,7 +26,9 @@ from scout.gmail.raw_ledger import GmailRawLedger
 def main() -> int:
     ledger = GmailRawLedger(settings.gmail_database_url)
     ledger.ensure_schema()
-    print("src_gmail raw ledger ready (raw_objects + raw_partition_seq + raw_sync_state).")
+    print("src_gmail ready:")
+    print("  ledger  raw_objects · raw_skipped · raw_sync_state")
+    print("  grain   mailbox · thread · message · attachment")
     return 0
 
 

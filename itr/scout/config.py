@@ -122,7 +122,11 @@ class Settings(BaseSettings):
     action_mode: str = "draft_only"  # draft_only | gated_execute
 
     # ── Connections — Sutej ─────────────────────────────────────────────────────
-    database_url: str = "postgresql+psycopg://postgres:itr@localhost:5432/itr"
+    # Port 5434, not 5432: infra/docker-compose.yml binds the itr container to
+    # 5434 because 5432 is already a native Postgres on this machine. Pointing
+    # here at 5432 does not fail — it silently connects to the wrong database.
+    # SQLAlchemy dialect form; psycopg3 callers want `database_dsn` below.
+    database_url: str = "postgresql+psycopg://postgres:itr@localhost:5434/itr"
     # MinIO settings live in the raw-lake block above — one definition only.
     qdrant_url: str = "http://localhost:6333"
 
@@ -192,6 +196,16 @@ class Settings(BaseSettings):
     redis_url: str = "redis://:itr_dev@localhost:6379/0"
 
     # ── Convenience properties ────────────────────────────────────────────────
+    @property
+    def database_dsn(self) -> str:
+        """`database_url` in a form psycopg3 and psql accept.
+
+        SQLAlchemy needs the `postgresql+psycopg://` dialect prefix; psycopg
+        rejects it outright (ProgrammingError) and so does psql. Strip the
+        driver so one setting serves both, rather than keeping two in sync.
+        """
+        return self.database_url.replace("postgresql+psycopg://", "postgresql://", 1)
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"

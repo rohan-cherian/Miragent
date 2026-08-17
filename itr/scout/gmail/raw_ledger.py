@@ -39,6 +39,7 @@ SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schema"
 SCHEMA_FILES = (
     SCHEMA_DIR / "002_src_gmail_raw.sql",
     SCHEMA_DIR / "003_src_gmail_regrain.sql",
+    SCHEMA_DIR / "004_raw_ingest.sql",
 )
 # Retained for callers/tests that reference the ledger's own DDL directly.
 SCHEMA_SQL = SCHEMA_FILES[0]

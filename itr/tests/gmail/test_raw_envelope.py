@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 from typing import Any
 
 from scout.gmail.envelope import (
@@ -128,14 +129,17 @@ def test_collect_attachment_specs():
     assert specs[0]["is_inline"] is False
 
 
-def test_attachment_entry_inlines_base64_and_hashes():
+def test_attachment_entry_records_object_path_and_hash():
+    """Task 6: bytes live in their own object, the entry points at it."""
     spec = {"part_id": "1", "filename": "a.bin", "mime_type": "application/octet-stream",
             "size_bytes": 4, "attachment_id": "att-1", "is_inline": False, "content_id": None}
-    entry = build_attachment_entry(spec, b"\x00\x01\x02\x03", max_bytes=1000)
-    assert entry["data_base64"] == base64.b64encode(b"\x00\x01\x02\x03").decode()
-    assert entry["sha256"]
+    path = "gmail/2026/08/14/m-1/attachments/att-1_a.bin"
+    entry = build_attachment_entry(spec, b"\x00\x01\x02\x03", max_bytes=1000, object_path=path)
+    assert entry["object_path"] == path
+    assert entry["sha256"] == hashlib.sha256(b"\x00\x01\x02\x03").hexdigest()
     assert entry["truncated"] is False
     assert entry["error"] is None
+    assert "data_base64" not in entry, "attachment bytes must not be inlined"
 
 
 def test_oversized_attachment_keeps_metadata_and_flags_truncation():
@@ -143,9 +147,21 @@ def test_oversized_attachment_keeps_metadata_and_flags_truncation():
             "size_bytes": 999_999, "attachment_id": "att-1", "is_inline": False, "content_id": None}
     entry = build_attachment_entry(spec, None, max_bytes=1000)
     assert entry["truncated"] is True
-    assert entry["data_base64"] is None
+    assert entry["object_path"] is None
     assert entry["filename"] == "big.iso"
     assert "exceeds" in entry["error"]
+
+
+def test_oversized_attachment_with_bytes_stores_no_object():
+    """Over the cap the bytes are dropped, so there is no path to point at."""
+    spec = {"part_id": "1", "filename": "big.iso", "mime_type": "application/octet-stream",
+            "size_bytes": 5, "attachment_id": "att-1", "is_inline": False, "content_id": None}
+    entry = build_attachment_entry(
+        spec, b"\x00" * 5000, max_bytes=10, object_path="should/be/discarded"
+    )
+    assert entry["truncated"] is True
+    assert entry["object_path"] is None
+    assert entry["sha256"], "hash is still recorded for provenance"
 
 
 def test_envelope_matches_handover_section_6_keys():
@@ -176,7 +192,10 @@ def test_build_envelope_captures_full_fidelity():
     raw = _multipart_message()
     attachments = [
         build_attachment_entry(
-            collect_attachment_specs(raw["payload"])[0], b"%PDF-1.4\n", max_bytes=10_000
+            collect_attachment_specs(raw["payload"])[0],
+            b"%PDF-1.4\n",
+            max_bytes=10_000,
+            object_path="gmail/2026/08/14/m-1/attachments/att-1_invoice.pdf",
         )
     ]
     doc = build_envelope(raw, account_id="support@motiveminds.com", attachments=attachments)
@@ -188,7 +207,7 @@ def test_build_envelope_captures_full_fidelity():
     assert doc["body_text"] == "Invoice is attached."
     assert doc["has_html"] is True
     assert doc["attachment_count"] == 1
-    assert doc["attachments"][0]["data_base64"]
+    assert doc["attachments"][0]["object_path"]
     assert doc["content_sha256"]
     # Duplicate headers survive in headers_raw even though the map keeps one.
     received = [h for h in doc["headers_raw"] if h["name"] == "Received"]

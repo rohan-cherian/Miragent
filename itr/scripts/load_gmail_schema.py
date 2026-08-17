@@ -29,6 +29,7 @@ def main() -> int:
     print("src_gmail ready:")
     print("  ledger  raw_objects · raw_skipped · sync_state")
     print("  grain   mailbox · thread · message · attachment")
+    print("  runs    raw_ingest.runs · raw_ingest.run_stage_event")
     return 0
 
 

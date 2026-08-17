@@ -185,11 +185,18 @@ def build_attachment_entry(
     raw_bytes: bytes | None,
     *,
     max_bytes: int,
+    object_path: str | None = None,
     error: str | None = None,
 ) -> dict[str, Any]:
     """
     One attachment record. Oversized or failed fetches keep their metadata and
     set ``truncated``/``error`` rather than silently vanishing.
+
+    Bytes are NOT carried here. Slice-1 doc Task 6 stores each attachment as
+    its own object under ``…/{messageId}/attachments/{attachmentId}_{filename}``
+    and this entry records ``object_path`` pointing at it — which is also what
+    ``src_gmail.attachment.object_path`` (NOT NULL) needs. The caller writes
+    the bytes and passes the resulting path in.
     """
     entry: dict[str, Any] = {
         "part_id": spec.get("part_id"),
@@ -200,7 +207,7 @@ def build_attachment_entry(
         "is_inline": bool(spec.get("is_inline")),
         "attachment_id": spec.get("attachment_id"),
         "sha256": None,
-        "data_base64": None,
+        "object_path": object_path,
         "truncated": False,
         "error": error,
     }
@@ -212,10 +219,11 @@ def build_attachment_entry(
     entry["size_bytes"] = len(raw_bytes)
     entry["sha256"] = hashlib.sha256(raw_bytes).hexdigest()
     if len(raw_bytes) > max_bytes:
+        # Metadata is kept, the bytes are not stored, and object_path stays
+        # None — there is no object to point at.
         entry["truncated"] = True
         entry["error"] = f"exceeds gmail_raw_max_attachment_bytes ({max_bytes})"
-        return entry
-    entry["data_base64"] = base64.b64encode(raw_bytes).decode("ascii")
+        entry["object_path"] = None
     return entry
 
 

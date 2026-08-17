@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 import httpx
@@ -44,7 +44,12 @@ from scout.gmail.envelope import (
     serialise,
 )
 from scout.gmail.raw_ledger import GmailRawLedger, RawSyncState
-from scout.raw.keys import InvalidMessageId, build_object_key, partition_date
+from scout.raw.keys import (
+    InvalidMessageId,
+    build_attachment_key,
+    build_object_key,
+    partition_date,
+)
 from scout.raw.minio_client import RawLakeClient
 
 logger = logging.getLogger(__name__)
@@ -277,10 +282,17 @@ class GmailRawSync:
     # ── per-message write ─────────────────────────────────────────────────────
 
     def _hydrate_attachments(
-        self, message_id: str, raw_message: dict[str, Any]
+        self,
+        message_id: str,
+        raw_message: dict[str, Any],
+        partition: date | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Fetch every attachment's bytes and inline them base64.
+        Fetch every attachment's bytes and store each as its own raw object.
+
+        Slice-1 doc Task 6 keeps attachments beside their message rather than
+        base64 inside the message JSON, so ``src_gmail.attachment.object_path``
+        has a real path to point at. Each entry records that path plus sha256.
 
         Parts Gmail already inlined in ``body.data`` cost no extra call. A
         single attachment failing does not fail the message — the entry keeps
@@ -317,9 +329,38 @@ class GmailRawSync:
                     spec.get("filename"),
                     error,
                 )
+            # Store the bytes as their own object, then point the entry at it.
+            object_path: str | None = None
+            if raw_bytes and len(raw_bytes) <= self.max_attachment_bytes:
+                try:
+                    object_path = self.lake.put_raw(
+                        raw_bytes,
+                        build_attachment_key(
+                            partition=partition or date.today(),
+                            message_id=message_id,
+                            attachment_id=str(spec.get("attachment_id") or spec.get("part_id") or ""),
+                            filename=str(spec.get("filename") or ""),
+                            prefix=self.prefix,
+                            layout=self.layout,
+                            account_id=self.account_id,
+                        ),
+                        content_type=str(spec.get("mime_type") or "application/octet-stream"),
+                    )
+                except Exception as exc:  # keep the message, flag the attachment
+                    error = error or f"{type(exc).__name__}: {exc}"
+                    logger.warning(
+                        "Attachment store failed (message=%s file=%s): %s",
+                        message_id,
+                        spec.get("filename"),
+                        error,
+                    )
             entries.append(
                 build_attachment_entry(
-                    spec, raw_bytes, max_bytes=self.max_attachment_bytes, error=error
+                    spec,
+                    raw_bytes,
+                    max_bytes=self.max_attachment_bytes,
+                    object_path=object_path,
+                    error=error,
                 )
             )
         return entries
@@ -362,7 +403,11 @@ class GmailRawSync:
             self._heal_ledger(payload_id, raw_message, key, internal_ms, stat)
             return False
 
-        attachments = self._hydrate_attachments(payload_id, raw_message)
+        # Same day folder as the message, so the two never drift apart.
+        partition = partition_date(
+            internal_date_ms=internal_ms, partition_by=self.partition_by
+        )
+        attachments = self._hydrate_attachments(payload_id, raw_message, partition)
         document = build_envelope(
             raw_message,
             account_id=self.account_id,
@@ -405,7 +450,7 @@ class GmailRawSync:
 
         result.written += 1
         result.bytes_written += put.size_bytes
-        result.attachments_written += sum(1 for a in attachments if a.get("data_base64"))
+        result.attachments_written += sum(1 for a in attachments if a.get("object_path"))
         logger.info(
             "Wrote %s -> s3://%s/%s (%d bytes, %d attachment(s))",
             payload_id,

@@ -10,16 +10,77 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 import boto3
 from botocore.client import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from scout.config import settings
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+# Transient S3/MinIO conditions worth a retry. Anything else (NoSuchKey,
+# AccessDenied, a bad bucket name) is a real answer and retrying only delays it.
+_RETRYABLE_CODES = {
+    "InternalError",
+    "RequestTimeout",
+    "RequestTimeTooSkewed",
+    "SlowDown",
+    "ServiceUnavailable",
+    "ThrottlingException",
+    "503",
+    "500",
+}
+_RETRY_ATTEMPTS = 3
+_RETRY_BASE_SECONDS = 0.5
+
+
+def sha256(data: bytes) -> str:
+    """Content hash of raw bytes, as the doc's Task 6 API specifies."""
+    return hashlib.sha256(data).hexdigest()
+
+
+def _is_retryable(exc: Exception) -> bool:
+    if isinstance(exc, BotoCoreError):
+        return True
+    if isinstance(exc, ClientError):
+        err = exc.response.get("Error", {})
+        status = str(exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", ""))
+        return err.get("Code") in _RETRYABLE_CODES or status in {"500", "503", "429"}
+    return False
+
+
+def _with_retry(what: str, fn: Callable[[], T]) -> T:
+    """Run ``fn``, retrying transient failures with exponential backoff.
+
+    Never logs payloads — only the operation name and the error — because raw
+    objects contain customer mail.
+    """
+    last: Exception | None = None
+    for attempt in range(1, _RETRY_ATTEMPTS + 1):
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - re-raised below
+            if not _is_retryable(exc) or attempt == _RETRY_ATTEMPTS:
+                last = exc
+                break
+            delay = _RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+            logger.warning(
+                "%s failed (attempt %d/%d, %s), retrying in %.1fs",
+                what,
+                attempt,
+                _RETRY_ATTEMPTS,
+                type(exc).__name__,
+                delay,
+            )
+            time.sleep(delay)
+            last = exc
+    raise RawLakeError(f"{what} failed after {_RETRY_ATTEMPTS} attempts: {last}") from last
 
 
 @dataclass(frozen=True)
@@ -169,6 +230,37 @@ class RawLakeClient:
             return res["Body"].read()
         except ClientError as exc:
             raise RawLakeError(f"get_object {key} failed: {exc}") from exc
+
+    # ── doc's Task 6 API ─────────────────────────────────────────────────────
+    # put_raw / get_raw / sha256 / ensure_bucket are the names the Slice-1 doc
+    # specifies. They wrap the methods above and add the retry the doc asks
+    # for. stat_object / object_exists are kept alongside them: the doc's API
+    # has no HEAD because its dedup lives in Postgres, whereas handover doc
+    # section 8 makes the bucket itself the authority. Losing them would remove
+    # the duplicate guard, so both survive.
+
+    def put_raw(self, data: bytes, key: str, *, content_type: str = "application/json") -> str:
+        """Write bytes and return the object path to store in Postgres.
+
+        The returned path is the key, which is what ``get_raw`` accepts back
+        and what ``src_gmail.message.object_path`` records.
+        """
+        _with_retry(
+            f"put_raw {key}",
+            lambda: self.put_bytes(key=key, body=data, content_type=content_type),
+        )
+        return key
+
+    def get_raw(self, object_path: str) -> bytes:
+        """Read bytes back by object path.
+
+        Accepts either a bare key or a ``bucket/key`` form, so a path read out
+        of Postgres round-trips whichever way it was recorded.
+        """
+        key = object_path
+        if key.startswith(f"{self.bucket}/"):
+            key = key[len(self.bucket) + 1 :]
+        return _with_retry(f"get_raw {key}", lambda: self.get_bytes(key))
 
     def list_keys(self, prefix: str, *, limit: int = 1000) -> list[str]:
         keys: list[str] = []

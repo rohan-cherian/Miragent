@@ -109,6 +109,45 @@ def build_object_key(
     return "/".join(parts)
 
 
+def build_attachment_key(
+    *,
+    partition: date,
+    message_id: str,
+    attachment_id: str,
+    filename: str = "",
+    prefix: str = "gmail",
+    layout: str = "flat",
+    account_id: str = "",
+) -> str:
+    """
+    Object key for one attachment's bytes, stored beside its message.
+
+    Slice-1 doc Task 6 puts attachments at
+    ``…/{messageId}/attachments/{attachmentId}_{filename}``. The date segments
+    keep the handover doc's ``YYYY/MM/DD`` form so a message and its
+    attachments always share one day folder.
+
+    Attachments are separate objects rather than base64 inside the message
+    JSON, because ``src_gmail.attachment.object_path`` is NOT NULL and needs a
+    real path to point at.
+    """
+    safe_message = safe_message_id(message_id)
+    safe_attachment = _UNSAFE_ID.sub("-", (attachment_id or "").strip()) or "unknown"
+    # The filename is user-controlled, so it is sanitised rather than validated:
+    # an attachment must never be dropped just because it was named oddly.
+    safe_name = _UNSAFE.sub("-", (filename or "").strip().lower()).strip("-")
+    tail = f"{safe_attachment}_{safe_name}" if safe_name else safe_attachment
+
+    parts = [prefix.strip("/")]
+    if layout == "account":
+        parts.append(account_segment(account_id))
+    parts.append(f"{partition.year:04d}")
+    parts.append(f"{partition.month:02d}")
+    parts.append(f"{partition.day:02d}")
+    parts.extend([safe_message, "attachments", tail])
+    return "/".join(parts)
+
+
 def day_prefix(
     *,
     partition: date,

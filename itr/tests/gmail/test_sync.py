@@ -146,6 +146,13 @@ class FakeLake:
         self.meta[key] = dict(metadata or {})
         return PutResult(bucket=self.bucket, key=key, size_bytes=len(body), etag="e", sha256="s")
 
+    def put_raw(self, data: bytes, key: str, *, content_type: str = "") -> str:
+        self.put_bytes(key=key, body=data, content_type=content_type)
+        return key
+
+    def get_raw(self, object_path: str) -> bytes:
+        return self.objects[object_path]
+
 
 class FakeLedger:
     """Audit + cursor only. Never consulted for correctness."""
@@ -433,7 +440,9 @@ def test_written_object_keeps_full_fidelity_extras():
     doc = json.loads(lake.objects["gmail/2026/08/14/email_m1.json"].decode("utf-8"))
     assert doc["attachment_count"] == 1
     att = doc["attachments"][0]
-    assert base64.b64decode(att["data_base64"]) == b"%PDF-1.4\n"
+    # Task 6: attachment bytes live in their own object beside the message.
+    assert att["object_path"] == "gmail/2026/08/14/m1/attachments/att-m1_m1.pdf"
+    assert lake.objects[att["object_path"]] == b"%PDF-1.4\n"
     assert att["sha256"]
     assert doc["mime_tree"]["mimeType"] == "multipart/mixed"
     assert doc["headers_raw"]
@@ -568,7 +577,7 @@ def test_attachment_failure_does_not_lose_the_message():
 
     assert result.written == 1
     doc = json.loads(lake.objects["gmail/2026/08/14/email_m1.json"].decode("utf-8"))
-    assert doc["attachments"][0]["data_base64"] is None
+    assert doc["attachments"][0]["object_path"] is None
     assert "attachment gone" in doc["attachments"][0]["error"]
 
 

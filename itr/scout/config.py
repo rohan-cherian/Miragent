@@ -1,15 +1,16 @@
 """
 itr/scout/config.py — Centralised configuration for ITR Slice 1.
 
-Shared surface [RS]: Gmail credentials, thresholds, pins, ACTION_MODE.
+Shared surface [RS] — this file is extended by BOTH sides:
+  Rohan (here now): Gmail OAuth + scopes, MinIO raw lake, customer allowlist.
+  Sutej (Task 3):   DATABASE_URL, TENANT_ID, thresholds, embeddings pins,
+                    LLM tiers, ACTION_MODE. Deliberately NOT defined here so
+                    Task 3 lands without merge conflicts — do not re-add them
+                    on this side.
 
 All values come from environment variables (read from itr/.env.local on a
 laptop, injected by the platform elsewhere). The code never changes — only
 the environment does.
-
-Carried over from the pre-itr scout/config.py: only the Gmail block moved.
-Neo4j / ClickHouse / Weaviate / Redis settings deliberately did NOT come
-across — Slice 1 infra is postgres · minio · qdrant only.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,8 +29,7 @@ class Settings(BaseSettings):
 
     # ── Environment ───────────────────────────────────────────────────────────
     environment: str = "development"
-    tenant_id: str = "dev-tenant"
-    tenant_name: str = "Development Tenant"
+    # TENANT_ID / thresholds / ACTION_MODE arrive with Task 3 (Sutej) — not here.
 
     # ── Gmail integration (Desktop OAuth + polling sync) ─────────────────────
     gmail_client_id: str = ""
@@ -106,11 +106,6 @@ class Settings(BaseSettings):
     gmail_pubsub_topic: str = ""  # projects/<proj>/topics/<topic>
     gmail_push_shared_secret: str = ""  # ?token= guard on the push endpoint
     gmail_push_label_ids: str = ""  # comma-separated; empty = whole mailbox
-
-    # ── Action mode ───────────────────────────────────────────────────────────
-    # Gate on dispatch_write. Slice 1 ships DRY_RUN; LIVE requires an approved
-    # decision and is the only path that reaches GmailAdapter.send_reply().
-    action_mode: str = "DRY_RUN"  # DRY_RUN | LIVE
 
     # ── Convenience properties ────────────────────────────────────────────────
     @property

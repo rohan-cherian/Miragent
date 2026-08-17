@@ -171,8 +171,9 @@ itr/scout/raw/
   __init__.py · minio_client.py · keys.py
 itr/scout/gmail/
   envelope.py · raw_ledger.py · raw_sync.py   (+ client.py reworked)
-itr/scout/api/
-  app.py · routes/gmail_push.py
+itr/scout/gmail/ingest_api.py   # push receiver + app factory (moved out of
+                                # scout/api/ — that folder is Sutej's Task 24,
+                                # and the Task 4 lint bans scout.gmail imports there)
 itr/schema/003_src_gmail_raw.sql
 itr/scripts/
   load_gmail_raw_schema.py · minio_smoke_test.py
@@ -204,7 +205,7 @@ poetry run python scripts/gmail_raw_sync_loop.py --interval 60       # then leav
 Optional push (needs a GCP Pub/Sub topic + public HTTPS endpoint):
 
 ```powershell
-poetry run uvicorn scout.api.app:create_app --factory --port 8092
+poetry run uvicorn scout.gmail.ingest_api:create_app --factory --port 8092
 poetry run python scripts/gmail_watch_register.py --topic projects/<p>/topics/<t>
 ```
 

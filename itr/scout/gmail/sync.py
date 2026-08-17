@@ -45,7 +45,8 @@ from scout.gmail.envelope import (
     collect_attachment_specs,
     serialise,
 )
-from scout.gmail.mime import parse_message
+from scout.gmail.filters import should_drop
+from scout.gmail.mime import MimeParseError, parse_message
 from scout.gmail.raw_ledger import GmailRawLedger, RawSyncState
 from scout.gmail.store import (
     MessageRow,
@@ -110,6 +111,7 @@ class RawSyncResult:
     skipped_duplicates: int = 0  # HEAD said the object is already there
     skipped_known: int = 0  # ledger pre-filter, no API call spent
     skipped_non_customer: int = 0  # sender not on the allowlist
+    skipped_dropped: int = 0  # Task 8: system / bulk / category mail
     skipped_malformed: int = 0
     failed: int = 0
     attachments_written: int = 0
@@ -124,6 +126,7 @@ class RawSyncResult:
             f"written={self.written} "
             f"dupes_skipped={self.skipped_known + self.skipped_duplicates} "
             f"non_customer={self.skipped_non_customer} "
+            f"dropped={self.skipped_dropped} "
             f"malformed={self.skipped_malformed} failed={self.failed} "
             f"attachments={self.attachments_written} bytes={self.bytes_written}"
         )
@@ -250,6 +253,7 @@ class GmailRawSync:
         self,
         *,
         raw_message: dict[str, Any],
+        parsed: Any,
         object_path: str,
         checksum_sha256: str,
         attachments: list[dict[str, Any]],
@@ -273,8 +277,10 @@ class GmailRawSync:
 
         # Step 4 of the doc's order: parse MIME. Task 7's parser owns every
         # field below, including the three the raw envelope cannot give —
-        # from_display_name, quoted_stripped and signature_block.
-        parsed = parse_message(raw_message)
+        # from_display_name, quoted_stripped and signature_block. Reuses the
+        # ParsedMessage the drop filter already built, so each message is
+        # parsed once per run.
+        parsed = parsed or parse_message(raw_message)
         row = MessageRow(
             external_id=parsed.external_id,
             object_path=object_path,
@@ -541,6 +547,29 @@ class GmailRawSync:
             self._note_skip(message_id, "malformed", "Gmail response has no message id")
             return False
 
+        # Task 8: system and bulk mail, BEFORE the customer allowlist. Order
+        # matters — the allowlist would reject a Google security alert as
+        # merely "non_customer", losing the specific reason code that tells us
+        # which policy fired.
+        try:
+            parsed = parse_message(raw_message)
+        except MimeParseError as exc:
+            result.skipped_malformed += 1
+            self._note_skip(payload_id, "unparseable", str(exc))
+            if self._run is not None:
+                self._run.note_drop(payload_id, "unparseable")
+            return False
+
+        drop, reason = should_drop(parsed)
+        if drop:
+            # Never silently. The run carries the reason so we can always prove
+            # no real message was lost.
+            result.skipped_dropped += 1
+            self._note_skip(payload_id, reason or "dropped", f"from {parsed.from_address}")
+            if self._run is not None:
+                self._run.note_drop(payload_id, reason or "dropped")
+            return False
+
         # Customer allowlist. The backfill listing is already filtered
         # server-side; this catches the history path, which cannot be.
         allowed, sender = self._is_customer(raw_message)
@@ -617,6 +646,7 @@ class GmailRawSync:
             try:
                 self.upsert_canonical(
                     raw_message=raw_message,
+                    parsed=parsed,
                     object_path=key,
                     checksum_sha256=document["content_sha256"],
                     attachments=attachments,
@@ -724,11 +754,16 @@ class GmailRawSync:
                 )
 
         run.messages_written = result.written
+        # Every category that did not produce a written message. note_drop has
+        # already incremented this counter for Task 8 drops and for failures,
+        # so this is an assignment of the complete total rather than an add —
+        # otherwise those messages would be counted twice.
         run.messages_skipped = (
             result.skipped_known
             + result.skipped_duplicates
             + result.skipped_non_customer
             + result.skipped_malformed
+            + result.skipped_dropped
         )
         run.stage(
             "extract",

@@ -521,7 +521,10 @@ def test_only_customer_mail_is_stored():
     ).run()
 
     assert result.written == 3
-    assert result.skipped_non_customer == 3
+    # n2 is no-reply@google.com, caught by the Task 8 drop filter before the
+    # allowlist sees it — so it counts as dropped, not merely non-customer.
+    assert result.skipped_non_customer == 2
+    assert result.skipped_dropped == 1
     assert sorted(lake.objects) == [
         "gmail/2026/08/14/email_c1.json",
         "gmail/2026/08/14/email_c2.json",
@@ -534,9 +537,22 @@ def test_non_customer_mail_is_logged_not_silently_dropped():
     _sync(gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST).run()
 
     reasons = {s["reason"] for s in ledger.skips}
-    assert reasons == {"non_customer"}
-    assert len(ledger.skips) == 3
+    assert reasons == {"non_customer", "system_sender"}
+    assert len(ledger.skips) == 3, "every skip is recorded, whichever filter fired"
     assert any("rohancherian289@gmail.com" in s["detail"] for s in ledger.skips)
+
+
+def test_system_mail_is_dropped_with_its_own_reason_code():
+    """Task 8: a Google alert must not be logged as a generic non-customer."""
+    store = FakeRunStore()
+    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
+    _sync(
+        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST, run_store=store
+    ).run()
+
+    # The doc's acceptance check reads this off raw_ingest.runs.errors.
+    assert any(e.get("reason") == "system_sender" for e in store.last_run["errors"])
+    assert "gmail/2026/08/14/email_n2.json" not in lake.objects
 
 
 def test_own_sent_mail_is_never_stored():
@@ -598,7 +614,10 @@ def test_history_path_filters_after_fetch():
 
     assert result.mode == "history"
     assert result.written == 3
-    assert result.skipped_non_customer == 3
+    # Same split as the backfill path: 2 non-customers, plus no-reply@google.com
+    # taken by the Task 8 drop filter first.
+    assert result.skipped_non_customer == 2
+    assert result.skipped_dropped == 1
 
 
 def test_attachment_failure_does_not_lose_the_message():

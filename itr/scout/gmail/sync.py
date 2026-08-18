@@ -822,15 +822,11 @@ def build_raw_sync(
     account_id: str | None = None,
 ) -> GmailRawSync:
     """Wire a sync from settings, resolving the mailbox from the Gmail profile."""
-    from scout.gmail.auth import GmailTokenStore
+    # Task 9: get_client() decides live-vs-fixtures from USE_GMAIL_FIXTURES, so
+    # nothing downstream knows or cares which client it received.
+    from scout.gmail.client import get_client
 
-    gmail = client or GmailClient(
-        client_id=settings.gmail_client_id,
-        client_secret=settings.gmail_client_secret,
-        token_store=GmailTokenStore(settings.gmail_token_path),
-        user_id="me",
-        refresh_token_fallback=settings.gmail_refresh_token,
-    )
+    gmail = client or get_client()
     resolved = account_id
     if not resolved:
         profile = gmail.get_profile()

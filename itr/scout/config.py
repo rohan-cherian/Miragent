@@ -106,6 +106,13 @@ class Settings(BaseSettings):
     # Re-attempt ledger rows stuck in 'pending' after this many seconds.
     gmail_raw_pending_retry_seconds: int = 300
 
+    # ── Offline fixtures (Task 9) ─────────────────────────────────────────────
+    # When true, get_client() returns a FixtureClient reading from
+    # gmail_fixtures_dir instead of calling Gmail. The demo, and the whole
+    # adapter test suite, then run with no network and no credentials.
+    use_gmail_fixtures: bool = False
+    gmail_fixtures_dir: str = "scout/gmail/fixtures"
+
     # ── Gmail push (Cloud Pub/Sub) ────────────────────────────────────────────
     # Optional. The 60s poller is the workhorse; push just triggers it sooner.
     gmail_pubsub_topic: str = ""  # projects/<proj>/topics/<topic>

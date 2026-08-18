@@ -1,0 +1,164 @@
+{
+  "id": "1a009497d431273d",
+  "threadId": "1a009497d431273d",
+  "historyId": "90",
+  "originalHistoryId": "2756",
+  "internalDate": "1786862195000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "VPN drops about every 10 mins and I have to reconnect each time. started yesterday afternoon, was fine before that. im on a wired connection at home and everything else is fine. error says &quot;the",
+  "sizeEstimate": 7799,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp1524019qvb;        Sat, 15 Aug 2026 23:36:46 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:4a06:b0:47f:7f95:8a1e with SMTP id ffacd0b85a97d-481606f599fmr25759908f8f.5.1786862206242;        Sat, 15 Aug 2026 23:36:46 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786862206; cv=pass;        d=google.com; s=arc-20260327;        b=fV5DYM0HGj0EldzxSTjdhuabSsMdKsu9E9lXGYNxC2edvcBJxAxUMlxcPPjHRBk5kC         VJ3IvPRRyBGDC8NNdPphAmtVWtV3S3Da6ZAvrff8ep3I5tC/vylzsH1cooKUsepmDe7j         /6znXYc2u1nK/0T5c0ZZNic+FRrg6wykUt8++2Hp2FSJVWASzzbxQWbpku3SnzQ6q2X0         wFBNXMyFoIwpzqcCxKXs4OYxads0xMJhp3k4Vfaak8LmNBsV8G32Eu0d8f2QCZSwVc8C         +rICxtJQQHcATCdfrMlV0HSX9ASzeYGt6ddeklyetO1LmN1WlalrsOPJGIpyIG8BznG/         odgA=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=Iol/zWaFovF/Yv5WbPeaC5hk3BqDValPnciHlFyi1wc=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=H2Gw1eJl5cPaHSXX1yHjodTrcDdCPs4884VV3C7oYj85/rPtuWlHE/eQqX6JyxteUF         ElFUE8qSDzZpjXRMDuuqMi1k8+t0xAYB/wSyp2smA+9FqmL0mIy5Yihn1J+U/BLdxOIm         3+A32Wj3Q8zVtjYkqzN60OqA2unu/0e3dJzqq6/QkZncb+J+bUJgeHAwXYcJSYs1V6uv         q9+j6Oj25dWTw+U/J4wlQY7xnfy4ZP4TEZLe0GEGa36YRsCKg9g+TIz6gfGGXcBYNzVY         2/XOE7RK8AFhEL9yBSyjN9n6YHysmr2OuGzy7C+ynvVBU79LNMRfZ+d50zvEQDJ6IDEF         1Fxw==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=ji5KMVme;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id ffacd0b85a97d-4815f15b81bsor792187f8f.0.2026.08.15.23.36.46        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sat, 15 Aug 2026 23:36:46 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=ji5KMVme;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786862206; cv=none;        d=google.com; s=arc-20260327;        b=qn3CnIirlWQPRXOyqZdrFJwLsaQVHck/vXS15S/ywmHqvKyeOZNFsSTnafI1m1EpBE         oJ7hKnuKB1syfSnl/7c5Rj7DvBCorwzxL10suhR97dRqZkxyxoTNRgukxaXZl31elq1z         lfPgDamQb5V9ADhgBf4qdqfC5omgVg9GABDgSlJgwIclFJxI5mHyH+yBiLWB3KCc3P+v         PnhyywM0k3E81bdJuVZ7lgkcjIJftfROKIRCzKjqyHxrzuVgKbMg2QU9HZQc83CiErbi         nAmWL/bQltRTzvhoFQKpndBglOyL1AFa+s0JpoRA/T8c33WkMn0gQvlI+3Lp74TsCSQR         HYtA=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=Iol/zWaFovF/Yv5WbPeaC5hk3BqDValPnciHlFyi1wc=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=jXnIUc6dbSDowVeosHOmzC0QpdHS5YA+RHZB6mkijGWRznVhV2LPV7d2GXeVeQ83uM         uPJXELy7MrtY2jd0ZExybEDxnQvByLAm0wlwkSh1YqIwo+Rl84q9JlVij2OX0L13C9lj         PM78oLHeCi4FwTHjzrTmzT9uH7z5JpXW4DneOsz05vVPm/sN8b2UbwK0eAgBGbqJFQ1Z         mijblF15bmI3rrGOJYpuGEFwSKq/RpvAEl1Giorl5P6z4e643T2xEqnoAyy/0I916nu/         pEk/nnmZSf5VSUmDxNpN7EPNMbnieutBhsDeUtXzE3zM/XCdw0xwoQKr4ZfJlPsFzME5         psJQ==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786862206; x=1787467006; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=Iol/zWaFovF/Yv5WbPeaC5hk3BqDValPnciHlFyi1wc=;        b=ji5KMVmeGwwVvpQaIQj3BvI9Am7IijRR/gFp39MtxMB0mRLHypLfUcoDIGR6JOO9jZ         lYsq1jPLMml05pkj1mT4sTkABokHT7OhSY38bdG95WsqA5HzX5yIPq8aeo8h4f0Iim3W         bVBWV4E8H/IqDKx/NpfnGPFn2k/VmEr9aKZLLjmhC5N0dxAiLUUM/XaooNbqWLzCSc77         2Ooxy5BAtfHK6mPo/FhMWB7nzDopZb9YyJS22L8bm7scC1VWnbA7DkiyXvN2qVsZlXXy         q5kwTBOU7ybF13e5sXlE57U2nf2b0h+Qi84l93jWSKULmNb1YnHl0cM0P2pqfLvU2OKC         IcXA=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786862206; x=1787467006;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=Iol/zWaFovF/Yv5WbPeaC5hk3BqDValPnciHlFyi1wc=;        b=YtVOU6VpurYVAv8uKv3YQUNhGo/kSEaVfFVCHLkDQq5XvjlVrjljyikVdKuUis65bc         hecLJhP143WcNjCa71ifmrN2/KhsjGw7nW1UcFrwAcVqDpUaZ9KoRofjaF5nzD+tYjbi         H98p9/9MovYvLqKsgTPEODwqwamHuhwBNHG5oqsVJCaYGQxqKO1eWJlp2qhvNnCwRCa/         lZx7Khaocy9kIArs7gE1KTS05U9ekihogXPOlhjBX2iFMlZD3B1OhcEI133qD9qYrFgi         IYGxjbfWdvs5um3dg4hMIf5oa3+iJ1AQrYxKy9/fAcb9NSHvu07Zsm6wgzJmEm2qe63F         Ltnw=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YwTopfYOhoDgHpL+uu3uFWs3xs4lPru35ZeixMxF/bwcjMyOB+9 XCDrx5uP1ubD7ko0nvprmt2nGTb0AUhpP/B2wILUCJfMmMuL6fgRfsXOhFpCnJvj/T6ip1c6bdX ojy9LsCzmTNjnaUgOrjtaAkax5l07hlv4PreNXSp5CUA="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD10VqtqtdNW9NJYD8YGAcqqINEUorb5j1hg063xnayuThUfqQ5LwQI/LLEKPbmt TM05AVMfgcmuSJq6r7LhbsNjmMYE7s8gRK+8L9nXJqnuOE2VkoY7XOt0EdqONqphJeJsvzX1mVU iiBMDEpCyvtrF9tV3J1hmMM0zJxRi6q5mAZPWBPV5RzShlRDJZ8ggd4lLGpv4Nb0yGd2dMZpqmR AAi6Dv6hfTU5CHMpIZhPCM2Rd6OwS4v7o+7YcnK/2JjMF7dPa1bSm6AXrLf3ZIfBDvGoNgcutxl QOYvz4U6shvwjYsejFZXXgZIPY3XdVKKr2PFvsvut7MQ"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:600c:5392:b0:495:48d7:f178 with SMTP id 5b1f17b1804b1-4998795d6bemr261394175e9.11.1786862205804; Sat, 15 Aug 2026 23:36:45 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds ojasvi <motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Sun, 16 Aug 2026 12:06:35 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1WDI_4WHidJitqBCmfndjGb0v5uz_HYjDaFO_YCIN9L2tOF2EiJaVpt4KM"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMH2=CPteaWypZkseD-1b_9zXb7M8-jS+auknKQBKD3Otro5OA@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "VPN keeps dropping every few minutes"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"0000000000000a22a106592447bc\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 285,
+          "data": "VlBOIGRyb3BzIGFib3V0IGV2ZXJ5IDEwIG1pbnMgYW5kIEkgaGF2ZSB0byByZWNvbm5lY3QgZWFjaCB0aW1lLiBzdGFydGVkDQp5ZXN0ZXJkYXkgYWZ0ZXJub29uLCB3YXMgZmluZSBiZWZvcmUgdGhhdC4gaW0gb24gYSB3aXJlZCBjb25uZWN0aW9uIGF0IGhvbWUNCmFuZCBldmVyeXRoaW5nIGVsc2UgaXMgZmluZS4NCmVycm9yIHNheXMgInRoZSBjb25uZWN0aW9uIHdhcyB0ZXJtaW5hdGVkIGJ5IHRoZSByZW1vdGUgcGVlciINCg0KT2phc3ZpIEdvZGENCkZpbmFuY2UsIE5vcnRod2luZCBUcmFkZXJz"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 359,
+          "data": "PGRpdiBkaXI9Imx0ciI-VlBOIGRyb3BzIGFib3V0IGV2ZXJ5IDEwIG1pbnMgYW5kIEkgaGF2ZSB0byByZWNvbm5lY3QgZWFjaCB0aW1lLiBzdGFydGVkDQp5ZXN0ZXJkYXkgYWZ0ZXJub29uLCB3YXMgZmluZSBiZWZvcmUgdGhhdC4gaW0gb24gYSB3aXJlZCBjb25uZWN0aW9uIGF0IGhvbWUgYW5kDQpldmVyeXRoaW5nIGVsc2UgaXMgZmluZS48ZGl2PmVycm9yIHNheXMgJnF1b3Q7dGhlIGNvbm5lY3Rpb24gd2FzIHRlcm1pbmF0ZWQgYnkgdGhlIHJlbW90ZSBwZWVyJnF1b3Q7wqA8ZGl2Pjxicj48L2Rpdj48ZGl2Pk9qYXN2aSBHb2RhPC9kaXY-PGRpdj5GaW5hbmNlLCBOb3J0aHdpbmQgVHJhZGVyc8KgwqA8L2Rpdj48L2Rpdj48L2Rpdj4"
+        }
+      }
+    ]
+  }
+}

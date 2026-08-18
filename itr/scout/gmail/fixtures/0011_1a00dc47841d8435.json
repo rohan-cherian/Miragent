@@ -1,0 +1,164 @@
+{
+  "id": "1a00dc47841d8435",
+  "threadId": "1a00dc47841d8435",
+  "historyId": "110",
+  "originalHistoryId": "2844",
+  "internalDate": "1786937361000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Hello,I am unable to connect to the vpn since yesterday.It times out a authentication. Regards, Anita Desai Finance",
+  "sizeEstimate": 7395,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp2388845qvb;        Sun, 16 Aug 2026 20:29:35 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:2403:b0:47f:eb5c:9b25 with SMTP id ffacd0b85a97d-48160724c11mr35344792f8f.10.1786937374898;        Sun, 16 Aug 2026 20:29:34 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786937374; cv=pass;        d=google.com; s=arc-20260327;        b=nys0nCTArP96QId1TwcKGkLHvdjH08TzJysYFNAPsUSGwhG0MW5hd1wHyzTIYY5O5b         Wr1HO9tanP7Aw/PXStUvFe4nP5P9jHKeQw4OkJyIx3YxMFQUvTC5M10CwSfnPvN4n4US         I7y/7ofImHIBoum3darOkD/ieu7MQ9CWb+pkUmJa6VoJhglwcyanqKJCJv0YZs8EU2vA         BXBnCqfwEIKBwGAAJQOct0cUMR1ge3NkAm4sbqH68IBlon8b+ufEuKg5iw9d0an7HKUX         aRUvq4ypPj5R6Aax0bYFTLJ4NSDPgTX3gdAJAGjQ/b942mg9YOow77b6ZFhqnbT4n6cw         xxcA=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=N7u51dUSRIcAEM+W4reJem8M0eSKhfwI75bNThj5kCw=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=fp9s+w5JysruR00Q9B/a44mip2yrSwyNTISHuvkSeO+jwPSFHAdUMfOj0lczlIkZ/v         +Hfo+upXxcHqDG1mUaEUoX+P7DDFUK/MaLDlNrBMx1Hkxhq2xJRhwrvDpKmItjalU9HJ         LnvOwO5+XvwBQnSP4lY34xTVSquLOBb7mvE3f/vZG2CcEUdhQAtM7tpLCL5QZ8VFuJfS         zmWcWwBCKnOfHlseLFnOZsvTB4isptcGzgGiIwhKaR9Y1BwQ51vFy0v00cxhCo5P3WVi         AmhDCjYdkSvEu6CAMs5AoJE/9BvCJQSt8Wq5tTRIZPcKTnovp3pQU2qIgvaVZ0ESVuUM         tFlQ==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=bzK6yLAM;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id ffacd0b85a97d-482a5a703fbsor9357f8f.11.2026.08.16.20.29.34        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sun, 16 Aug 2026 20:29:34 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=bzK6yLAM;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786937374; cv=none;        d=google.com; s=arc-20260327;        b=JP1F20uRGfrZJ7gYTBpvHSBUrNB/9cbFfMSjPLiDQxmyqd2xotrPjtA+xLDtRq4O8U         YrXc/gCF2Us1CmRZzdKvLxhUlQ8NpyZ3hvktlI+gHZ4/cWwOU09RAcdNK5lKCUIYAu/8         /3ezzsCJlAjADzEighOS9vULOuRfiKPmcuHMLhN9n4vCtHIHCQxHTaPgYytxxZiSe5vh         kafDPeojjAldneNKdgs2m/ZdkBhDDMYNVyjFCHbEnwdN28t6PteymFzPLXSzHLjbNV2r         UX9RcesgYpR77tgT7UoDFSwmr1D6QB0yK2GxYv7RJ13qZ2is8CSn/CQnZS/u1KZxjx5E         jp/A=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=N7u51dUSRIcAEM+W4reJem8M0eSKhfwI75bNThj5kCw=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=WBwKQpPn8bZRdkrEGuxqLj9uyGUyPqX0nIw2kW1QUCyChSMXBkF7zHUAtUcHGnhgQ8         GmuMp+EmttNlsF8W0LREesIgbu5dTNmjS2L48wO0nNARNHpTMxKaeFHouEh7/ZzeCA4f         Q+UG0YuBBvou+n8ewWv61AIhtjWp4KMQc7Bs8k78IEHT0cBhrS/RRA7cU6cRNmET54WQ         LtLRHT5c47P4k52iDoFJWeBcXDJq/WuEYtW88gJ41yeF1kSCVyw1HcP16qWvpgl5l+hW         48yMSQSGOUeT+ujz34EqdaPdTz51gXQTzqRhqWZKP/OKgnuiTy3kk2F4wStFeiN9HAi8         p9wg==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786937374; x=1787542174; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=N7u51dUSRIcAEM+W4reJem8M0eSKhfwI75bNThj5kCw=;        b=bzK6yLAMBjMaV+W9uSkNFemEiAnuAx4hZY6dEt1yDHeZx0iZTWj8g5yJz57Nkk3Sfz         GBdh6bsDuS7W6TvD4QKF3o8L/iqj62CmfAObfewaUln1pXP/JVLI+oNiaf5d/A/MCK4O         DgJ+1VW7m0KsxrSF/4rvlTTKL0p72NzqoPNjhc1AM772oq4SBAUFS9PBMCbPabfn8FZt         EW7JdL03Z3snk3LfWz5nwkIvVq6KuAqGhAjwjcC+qoSbz9jISpFMPEWJUIVP9V/tMudp         AatpAZiyP518YfGvqjHgSkmNqY5+oJ4kv7xiWfJYgffefewl2liz891LZ28zrXJ/fptv         9lyw=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786937374; x=1787542174;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=N7u51dUSRIcAEM+W4reJem8M0eSKhfwI75bNThj5kCw=;        b=W6wwFaYB4YWa+omeqIQMJgjKhyHOcAAMrS6XC1dVaVYjLQgoQMD7c8vFK4CkqTiyLV         QM1cSWaGbvSW6Z/NoS5cbr1Dj8bpjlbsRObX8Gtn0PAIesojcptczlUwoZ6NO7Uyj1u4         Kyjr7a5t+B3/rNhebZLEj6JslgpodmK4WJbJOFYCEQO+D1WxY7kqd6FjrlYRB0qMrPSW         VSIPBxQFhEaVgBw/MvSQa5GRoTJU6yfkPAqW3vDW8rFRmglmQiIIu68atgf/gB4dPIDe         GIszrxacVFamdatfus/F4TOZOHbWMeUaPM0jH1rQsjhnGkaFaw+0cnvrOnj03rPgEfxV         IYEA=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YyafoWMOA+PmECuLqNk5FLLbFyPp6bNcOcEyPy5odTLbBy5U36+ WaAWgdIh5zmZfAjttp372lMQ7kNaTHC4DZyVFwf4DfFhmhluOyP5NJo3UZ/ZhPrC1m673RN0OGa SKftEdiTDpViQUyDwS0YlVHSwSwk9JTD845qXAw=="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD10pZkvFQJT8eYmOF58sFPCS6elNX7JHChjqepDAn1e/B9AtRnQkZ2bG3caXE7s KAr2kIpC/qTzV+e1+kZPey2UdAhmCP/BIGi3ah65PdPAC9ndDBicf/9h0zs4Yjj1awZV8HN/diR ASGflAQ7PlOjU08ibUPduB19pDO7NJ45ZIfNDPzR0h2XLAorNENZ+JulrQ2myLcV0yrv3u7SjaX C15vFe+r4Keippmsq3Vkuty2VPuePZIndp/k2kh3+kWhPRBuOo53fDUNwb7LCGvjPaGS2eRh41F UP6fPkwAsRdaF0UVK0dmIZc9HXrN36WZXIwbKrMJmC6Q5Q=="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:18a3:b0:481:5ec6:3fa3 with SMTP id ffacd0b85a97d-4816078790fmr30505202f8f.28.1786937374309; Sun, 16 Aug 2026 20:29:34 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds ojasvi <motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Mon, 17 Aug 2026 08:59:21 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1WQvxNEzOhvQ3lh2NkY1LOyDmmFUllxaZJa0XjmBDQ5X21V5jJah7RfGXg"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMH2=CN1Bn8-qMq0jLDAwdKzLUpGHBkgDwUusaYJWpm4x=W=8g@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "Cannot access vpn from home"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"0000000000006e8213065935c7c2\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 119,
+          "data": "SGVsbG8sSSBhbSB1bmFibGUgdG8gY29ubmVjdCB0byB0aGUgdnBuIHNpbmNlIHllc3RlcmRheS5JdCB0aW1lcyBvdXQgYQ0KYXV0aGVudGljYXRpb24uDQpSZWdhcmRzLA0KQW5pdGEgRGVzYWkNCkZpbmFuY2U"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 146,
+          "data": "PGRpdiBkaXI9Imx0ciI-SGVsbG8sSSBhbSB1bmFibGUgdG8gY29ubmVjdCB0byB0aGUgdnBuIHNpbmNlIHllc3RlcmRheS5JdCB0aW1lcyBvdXQgYSBhdXRoZW50aWNhdGlvbi48YnI-UmVnYXJkcyw8YnI-QW5pdGEgRGVzYWk8YnI-RmluYW5jZcKgPC9kaXY-"
+        }
+      }
+    ]
+  }
+}

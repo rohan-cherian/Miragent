@@ -1,0 +1,207 @@
+{
+  "id": "1a00de1b562fc367",
+  "threadId": "1a00de1b562fc367",
+  "historyId": "130",
+  "originalHistoryId": "3031",
+  "internalDate": "1786939277000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "",
+  "sizeEstimate": 11915,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/mixed",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp2407495qvb;        Sun, 16 Aug 2026 21:01:31 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:2089:b0:47f:8b24:ef01 with SMTP id ffacd0b85a97d-4816070be29mr34257529f8f.1.1786939291136;        Sun, 16 Aug 2026 21:01:31 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786939291; cv=pass;        d=google.com; s=arc-20260327;        b=RJ7Bn/FRYhOpIRc6KTwOfBM/bQ69cb2R4MU/YvpAWbzHwC2E963/nq1tL1c0hHa9q3         PUWMVRHc5d9guviDQBvp33yiAKRgUnsLBQoBCiuopDQIJ6obU0BsPi0EZO5jJRz1vMn0         P0W4BJeQk2o69AKowkyxEkeNTIU0OgkufrqlcjoML5fxwSW/nAK+Ydj2vkALcY0fgEWK         94gGvdjxHGFjr4bJn7tokZ4YDhSdJnUh1KBvYu/wGxX7/RthpSFkw8lDdR8k/zzo4LV7         rku23+lO8TowfrJtomJXu8BiWzC1XpBktPDpKUkQDwRzkNpjDQ7RG0SMGZHeC94M97Da         dZJA=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=93Ozi6181yGSr3fYRXBPx6v8bYfPqE8hgf9Eo+gyzVQ=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=GsCXk6Agcpp8AyjfAJWfjwFpcEUmPqptplZsK9+JxlJHZyFfbRy8ouAOOaS11gYgHP         W7qPZHv266VdgZuqgCaSkI28FufNd7fSK7f0GfgnwGvsWKe2Eer0Fzu1SWczDJg0I/hl         lpgLzF+cNagDZ94BT84l5ALqSFSFl8yQOP00+PF5j0/4Q+WXFor3R1yk29vcyvswOuX9         EChOhEoPTlYYqbiS0wl3FxNfr6nXY7pxlwaZ/GykOZJiDrl3gUTAwTgxYwEcUfD9OGHd         OKblL6umQtVkQnfvQ3m/9t7DG6fzTCBjZE/f5ym8BS9ISy6VIOlgjYDBhUDbsqy0caNy         OMbw==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=jolrr9TI;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id ffacd0b85a97d-482a5a20fd7sor25437f8f.3.2026.08.16.21.01.30        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sun, 16 Aug 2026 21:01:31 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=jolrr9TI;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786939290; cv=none;        d=google.com; s=arc-20260327;        b=b84M+7g/PNF+PGe47VVTn6v6W/zwSlwCDSANrC0x8+J+JmFPACM3guDABP2Wcb7pwG         UA/ZjNFHy4GldSyTbY04gdXLibk5zxfDte5mX3Aw2RGCRJcnvGACu0PHYPnYhhoiikOJ         VV3QH5GrWSYedFI+yRSLCZLMuuRJzleUpY6W3gnw+yl3LYPLtM0aSGUUy9iZY+vYEDg9         BHivaGBZ4w0YVLtW38kAfXgrLi4DgAJgHiADGWpSNeSp873z5Wd8gqDPT/4qR7V5pmAV         5g7uTLiU+H/lPTkoCZvEO5DhG9dQlSP+4TSk7ykT0UY7mFJhxvOgEnmpKM2LTA962z52         8S5g=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=93Ozi6181yGSr3fYRXBPx6v8bYfPqE8hgf9Eo+gyzVQ=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=iEAUphMW3ayM1nfe4+ngzEnkd/mH6ouKUk0IJkvz5IYhnW7s4Bb1y8bvW6mUdsghVc         BlLDk+rbuAFAmb26KkndMXeb67UB7vfZNuLEiRz8rWZqk96G/eelshTXC4x2DNGe9lE8         TyCE40gIvX1wVZVyG3teaekbnG9tFXP1qPUpocfGSYH54svIfaNA8QD2P6ZPUwTHgIE1         xIm7JOH9TQcWcfRUkYKofGL1CUaIkgI6m9ZRZaNB0n4UXV4Cxys5QwnKFgYx4sbLraOt         gj59lFbH1dUAb7QYjqV+8t8piE7MMsRbZGTyt6zg2YGj4qb2oL14CeemJtWYxEJKYC3g         oaaA==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786939290; x=1787544090; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=93Ozi6181yGSr3fYRXBPx6v8bYfPqE8hgf9Eo+gyzVQ=;        b=jolrr9TIVLmK6ExrqTK4E1LBkyqMrIRxoMLdWslynBQkHHs7pWjXV4UhPxakNq8n9W         +fokPjlaafYhS2f81DTE6cuOLS3v/J6Rq4yUdcmChvvoWIQ/j+CYPEzg8t/432w1Q1+K         8esHtZNgwJaIIfKwBBh8p9mKP8gIZ4uurdNM/TmkOVMhhxv86BNGundk13OJ6OQKVqMl         YulGdoO/Tgg+5k24bPxh/K6DBZ6yjT/zGRq/8bAXfbTD7dN4QzUUGgDnjlKfvo1P2lic         wOoFaYXNpLlTMXk/tyDBkyS25+syDpCd3BNL4oF6BYrnvQHjOvy1lw5XCRq6DXzAZ6bI         Cg/g=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786939290; x=1787544090;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=93Ozi6181yGSr3fYRXBPx6v8bYfPqE8hgf9Eo+gyzVQ=;        b=o5yjCsJagmbwFRhREZ/fhfx3kTJPgfdaCBGnqs+weL/uIyl4tppC7/DyXIyK/opU6l         unPV0Kt3DS7qH3aViQVuLt2HJqyVd8ho8wpyVEwT2x9EHPokJgZoCSCSiiZHpcbMyo5z         pfs3xg4ewaAfDN8lzopS+TuzU1ldfuLsAv4YeyxqXRezM5GJBS2liqyEj2ICY8ofkBVu         LWyd08RlwjNHTBqyTIb+/YtX7eCi7FREXORcTlEjlZel1W478b9ZPMn9+dA9UBBKusSc         hGmYvEtkmo/mvqGiN06LGwNKiAAreO66Wycd85SLgqWPieXlXdLQ3fLIzdLsPMF/BSIK         Bb4A=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YxnhAZ7xEWJ16HyFabzG9LER6VLNQQpPfESm77nlWIe6ojIx/Ir TauP2FtLRhfVJAJaPHG6mkiCLVJiWXeIN1mXajpmMNrQPoRpd14aRzMBDA+3coCoW+iK7VkQlWI za8m5J1+Wc2BBf8wYRnntUTbj8p62NoWySgcjGQ=="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD125/WM7t9DEWD0Oe2Lsvgd8n5yABH4YLpiWeTkenS5W3iSO3KTDjhRBjo34Rcj UL60J0HQPaJrxRw7jJ3tj7UVrKUvz55ANI5XV0d8X/ADKkiGCn4/9aJNWrZ5cS8m8XUEpQt02xr w82CXWbb4RJorBTQakutxi6MckicepaBZf/HxRPoJ1Iq0Qw1lGfrFIAWrSx4skQGZLgmqMHp8Wf Vgpn392t/8v6BNtqUY1vR02g+P54cRk76ayudh3x48XukFG3BOW2UsLAVEnS41i81zvE7/fdi3e emJtHSKrIqKtdfnWoNg/rJdSPNmzAOCz6kSZWnXIoeM0Og=="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:41ef:b0:481:5bce:4485 with SMTP id ffacd0b85a97d-48160724606mr35220969f8f.13.1786939290366; Sun, 16 Aug 2026 21:01:30 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds ojasvi <motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Mon, 17 Aug 2026 09:31:17 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1VyiZTeNwS1S8Sjv45At-2RmQZ01zdUL7iblM4INmU-ozYXlulw-E5_ITs"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMH2=CPhQcN44c36tgoMAQ_PE9yjArJTxnfUFMq0d-0AjjQsUA@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "Invoice query-attached statement"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/mixed; boundary=\"000000000000a34d7c0659363961\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "multipart/alternative",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "multipart/alternative; boundary=\"000000000000a34d7b065936395f\""
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "partId": "0.0",
+            "mimeType": "text/plain",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=\"UTF-8\""
+              }
+            ],
+            "body": {
+              "size": 0,
+              "data": ""
+            }
+          },
+          {
+            "partId": "0.1",
+            "mimeType": "text/html",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=\"UTF-8\""
+              }
+            ],
+            "body": {
+              "size": 25,
+              "data": "PGRpdiBkaXI9Imx0ciI-PGJyPjwvZGl2Pg"
+            }
+          }
+        ]
+      },
+      {
+        "partId": "1",
+        "mimeType": "application/pdf",
+        "filename": "demo_invoice.pdf",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/pdf; name=\"demo_invoice.pdf\""
+          },
+          {
+            "name": "Content-Disposition",
+            "value": "attachment; filename=\"demo_invoice.pdf\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "base64"
+          },
+          {
+            "name": "Content-ID",
+            "value": "<f_mswpi72a0>"
+          },
+          {
+            "name": "X-Attachment-Id",
+            "value": "f_mswpi72a0"
+          }
+        ],
+        "body": {
+          "attachmentId": "ANGjdJ-cJmahMcUBttTtFzljGwYExSECzpUrELMOrdVryYY8E9lp6WteZR9bc8jxysezg9xmr4zh8P_2wioChhFGniOLSo41bE6Sgl0OVy1W2m6M-rHcw1IsNok3Zy3z6PX9wzq8V54zPkaK91MemTAof0OOfcr1EUp464G-Dhfkxl0t7c7TegFY8PCcdJvULnw1I0rRI5_emcCuwORMAEojxqDGv7bP6XFw9YXdMjY1cKHuUgpjBDUik5KM_WQdOxXzpiDOGRjmOT8PCRvo8x-7C8BoQqIiWTU-XLNXlEWaKbTXqaLxWd9XBylHwBWHsy6rOHWpfJllAkcs1mD4xVEhQ9rpC1JAWqnmAEZghS57TKKmy2di_DVPPl_x48JDa8gf-m5_Rll1hHhntNTs",
+          "size": 3237
+        }
+      }
+    ]
+  }
+}

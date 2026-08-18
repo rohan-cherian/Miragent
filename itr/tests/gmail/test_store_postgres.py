@@ -36,12 +36,11 @@ from scout.gmail.store import (
 
 @pytest.fixture(scope="module")
 def _schema_ready() -> None:
-    ledger = GmailRawLedger(settings.gmail_database_url)
-    try:
-        ledger.connect().close()
-    except Exception as exc:  # pragma: no cover - environment dependent
-        pytest.skip(f"Postgres unavailable: {type(exc).__name__}")
-    ledger.ensure_schema()
+    from test_raw_ledger_postgres import _postgres_reachable
+
+    if not _postgres_reachable():
+        pytest.skip("Postgres unavailable")
+    GmailRawLedger(settings.gmail_database_url).ensure_schema()
 
 
 @pytest.fixture

@@ -1,0 +1,164 @@
+{
+  "id": "1a0069bb243fcd6f",
+  "threadId": "1a0069bb243fcd6f",
+  "historyId": "50",
+  "originalHistoryId": "2748",
+  "internalDate": "1786817249000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Hi team, Could I get Power BI Desktop installed on my laptop please. Asset tag is NWT-LT-2231. I need it for the monthly reporting pack so ideally before Friday. Happy to be called on +91 9099876552 if",
+  "sizeEstimate": 8119,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp1066580qvb;        Sat, 15 Aug 2026 11:07:42 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a5d:56c1:0:b0:481:57f7:6015 with SMTP id ffacd0b85a97d-481606fbc2cmr17954107f8f.6.1786817262388;        Sat, 15 Aug 2026 11:07:42 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786817262; cv=pass;        d=google.com; s=arc-20260327;        b=GcaoZPMgwzCZiSVYM9m4WGl4n3oN9tHCaz2XlLjDK5v3Y66aVkkXVRgvqGzAzs4AUP         2JRnLDSi9C7J5V7KxN3S+RF5JzRSZMarB946UDUHqSUrijqT8uzUlvkBQS+q4WlYe1cd         kDgElK3jxvSDCcyMio9UOFH1MMbk3tt0Fez2+yINWhWnjAI5qWZOlZPcoA35em3GyQam         fDN2ZuhMIIaDaZszosbruVDT750eOfQKVEA5Fy7e8PaK8IuocJO9f8mJzPUiQ/JcKtpg         RQ7OCiaP4Id6QOGP5TMtguKS83kIidyYyyNIfNLmKprPZ3or/Td1ioBZq0GdBc3bz57z         4BBg=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=W9bsffzDn9o2NM4Embl5SnpXZ8W1PhueSgnzt9igmQI=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=S+ewBKT6mPN6SbV9gs3QNMWuy67lmnpCqfjyt5vVlyL/yCjf7gl8DTfQ/4SeIB6/uQ         IGel6XuDuOAnwWOo/uIvD2xjfanEenpz+X8s7EaYelgNOq6Rc/VVcUdtgcBoHS6Natp8         WpmEKqXkWDWyV6VBtQ6IbhxQ07mxSZod9XFhdw//4yNEgaBQs6VckYvPPGzAjgcImFMD         TfAy0SMt+RGEA1iwfCugHTBp7FQ1x3DdBG2bkqojqP9/C+wWKUhVG5YoXI3DZT9Xjgh1         nr2gBY46VliG25XxnKil08TOJfzb7r4NR4/GCW5XdeaZsxnkPrxb1ID3h7uvuSz69mXn         LxiA==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=rQese03K;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.vihaan@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.vihaan@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f65.google.com (mail-sor-f65.google.com. [209.85.220.65])        by mx.google.com with SMTPS id ffacd0b85a97d-4815f15c82csor1143214f8f.0.2026.08.15.11.07.42        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sat, 15 Aug 2026 11:07:42 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) client-ip=209.85.220.65;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=rQese03K;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.vihaan@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786817262; cv=none;        d=google.com; s=arc-20260327;        b=HUEzapoDrH1X+qYaoGFnZ18fWuJM67drR3HhdFuzqcbF6lRGqYbFlXi2XpfmYk8VU6         8DnfdLqZurNAukvIybDBkh9duq4YrqbnBuwZzDozYn2v11rn7uiIT91dDmkASMrLm9FW         Ylrt9qF1R+aytUOAzwZ5TuJ3pscorXn5fjS+T7yETbEUyGsbmt4qpGUnMxSnofk7257i         EiNGGNtIARqVHuX7lpWacBjMQi/gORjFKLxqhUTkoTfasBVrwQinsZQDZBgbI6lD8up7         CxRVhkO71MlQT6aGMXd1sE3i9oCAFfjS4hdfWlizbXQt3WC50/d4Kmhe2FSAh5uuwzJN         71CA=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=W9bsffzDn9o2NM4Embl5SnpXZ8W1PhueSgnzt9igmQI=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=JqEQcfv8e3hiFtEKLxfX8dXy4hJBEIfmN5t4IFZygo/IqMBGpFOy2QeZeCYZIUv2tn         7RRBIX9cv5EWMx1rWEglm6bBYgKq2sAn6bPTGTbxXZflthhK1ON5UobgyeQjDn7J5VXl         Y8Er0C4jRsrPgfge5q41Gs37KUNTtnYShUbgUjxWwABtfcuvY5UW8JQWHQoks0AnsChb         f+z/VcFS+QuUwAM7b+Fkz322qbo7kO4wmiRpjkx8nl6+zDh6x2P+DOGdUnciVRlL2u+u         UqiSGOoHHtT7zMaFQM7idBexFpHcz8VMFcYk/B4D7Ny12Mu+0veoLWo+5X/ab/mv4pmr         rufA==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786817262; x=1787422062; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=W9bsffzDn9o2NM4Embl5SnpXZ8W1PhueSgnzt9igmQI=;        b=rQese03KbBoII6ENwqp7hVtOcXQjmkiNl1i57MdF7ZL/BNuuqsTsQ3csYalQuKedb7         52orVbCMYeQ72zHdZww7mHYmGJBULztkPPra7yP2RzsaRJia30ba4jkRrZB4zXnQOdFF         MKUyALu+Ck8VsjDb8FPDRx15JPSZu/OWAWJdXkK/3BasEEq5PWch5FviZMM43sS9ik8D         tUb19To9vVY669d/1HyP0jAu89tIGJUB5iBYV8SsspYiXOaBGUXEG3fJ/duVTXIgYAlf         d6qQl4mORWXuDOMlRRR/ATzheHayMULOABJGPg5U0tlOiBpohce70zOe1YjBVqxIgxQA         X1pw=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786817262; x=1787422062;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=W9bsffzDn9o2NM4Embl5SnpXZ8W1PhueSgnzt9igmQI=;        b=KjSElEVIJWNo9V9EjUKRIyeFyvAaWE8mwwKk18PjQhXYu+6O104pMN6OxiZ2kSCS+y         D9C1SDee2VARvIVLV6EVBVegJtIVkIYT0GncDS5+QQFNGqApTNjpAoAqVIoSNamvNT1u         PfmCfdKEi7RLq3gzDs0kjZdEc4d93ofdtVJZget7Ziff+/AEITyGa+xPd83BsK+ji4mQ         8g/KHQ4QLIoqpIjU/K2Sb6o2qSUrBTdXBOi/LznSf+IsSIlMbuiTIW9OgpU3/qQf70IG         1CKbD/Xbi95oSB0K2Glvaq7qVVHgudzT3AhDufYKCZQPO5OwMZuKcz9THYGAwEBjiK11         +CIA=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YzNe0pOWGxxeAmdl91unyqFuVAQQq10YXDYRcH5yd1gxkoBDRfX PUfb9qNbYAv4gAx9O/msyJ/Y5TN2AnBYtns7WILmsUIsUx3tKWsQ/9aMgGX2oHShpNqdxZ7CW7y RoBzmcRH/OLna2LifQh9+iAdSQFKKPYRGeMhKGJN8MZkn"
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD10MKFsZiCC3rY9Us40735pU/9jmmBZrroldSlKRPkTpiAmhzx8WY4LmFmI+MDh Ov+eD8PaEdveVLbKV+8vyWYZi6GdslVdBFcv4KoFsCmYkElP0Dw5JhVyi2PCO2auSBgAGNGGTRx Di/s6/U/RqIE2DaQFuVNiTzCRzwVvEEKa6Fm9w48EE16GMPQIdIe/kwe6UaMh9jOB/PR0W2F+Zt pqBPT9nMs/rImlOH2yDJfBz8QqYTPoNpZkkU7UZmC/JUo0ZnDmE6eJolie8hBqZe27Fk+Q31Yaq fjcXpl0h5MhPLOAiWsL1hZhzxF95qfYcN5GV1/vShXvl0Q=="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:4809:b0:47f:eac2:6f55 with SMTP id ffacd0b85a97d-48160751f60mr23960874f8f.19.1786817261847; Sat, 15 Aug 2026 11:07:41 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "Motiveminds Vihan <motiveminds.vihaan@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Sat, 15 Aug 2026 23:37:29 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1U4tXXYse_p99jf597oZ_RMxv9eadmLDdWzf6uYvMkbtezLCuxJ28xgpK8"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMV30rFBOi5D1CNtToaeOqTn=xOZpsiBhAxT41vGYaDyqhaa8w@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "Request: Power BI Desktop install on my machine"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"0000000000002bce82065919d085\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 362,
+          "data": "SGkgdGVhbSwNCg0KQ291bGQgSSBnZXQgUG93ZXIgQkkgRGVza3RvcCBpbnN0YWxsZWQgb24gbXkgbGFwdG9wIHBsZWFzZS4gQXNzZXQgdGFnIGlzDQpOV1QtTFQtMjIzMS4gSSBuZWVkIGl0IGZvciB0aGUgbW9udGhseSByZXBvcnRpbmcgcGFjayBzbyBpZGVhbGx5IGJlZm9yZQ0KRnJpZGF5Lg0KSGFwcHkgdG8gYmUgY2FsbGVkIG9uICs5MSA5MDk5ODc2NTUyIGlmIGl0J3MgZWFzaWVyIHRvIHJlbW90ZSBpbiwgb3IgcmVhY2gNCm1lIGF0IHZpaGFhbi5wZXJzb25hbEBleGFtcGxlLmNvbSBpZiBJJ20gbm90IGF0IG15IGRlc2suDQoNClRoYW5rcywNClZpaGFhbiBCYW5lcmplZQ0KSVQgT3BlcmF0aW9ucywgTm9ydGh3aW5kIFRyYWRlcnM"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 561,
+          "data": "PGRpdiBkaXI9Imx0ciI-wqBIaSB0ZWFtLMKgPGRpdj48YnI-PGRpdj5Db3VsZCBJIGdldCBQb3dlciBCSSBEZXNrdG9wIGluc3RhbGxlZCBvbiBteSBsYXB0b3AgcGxlYXNlLiBBc3NldCB0YWcgaXMNCk5XVC1MVC0yMjMxLsKgPHNwYW4gc3R5bGU9ImJhY2tncm91bmQtY29sb3I6dHJhbnNwYXJlbnQiPkkgbmVlZCBpdCBmb3IgdGhlIG1vbnRobHkgcmVwb3J0aW5nIHBhY2sgc28gaWRlYWxseSBiZWZvcmUgRnJpZGF5LsKgPC9zcGFuPjxkaXY-SGFwcHkgdG8gYmUgY2FsbGVkIG9uICs5MSA5MDk5ODc2NTUyIGlmIGl0JiMzOTtzIGVhc2llciB0byByZW1vdGUgaW4sIG9yIHJlYWNoIG1lIGF0DQo8YSBocmVmPSJtYWlsdG86dmloYWFuLnBlcnNvbmFsQGV4YW1wbGUuY29tIj52aWhhYW4ucGVyc29uYWxAZXhhbXBsZS5jb208L2E-IGlmIEkmIzM5O20gbm90IGF0IG15IGRlc2suPC9kaXY-PGRpdj7CoDwvZGl2PjxkaXY-VGhhbmtzLMKgPC9kaXY-PGRpdj5WaWhhYW4gQmFuZXJqZWU8L2Rpdj48ZGl2PklUIE9wZXJhdGlvbnMsIE5vcnRod2luZCBUcmFkZXJzPC9kaXY-PC9kaXY-PC9kaXY-PC9kaXY-"
+        }
+      }
+    ]
+  }
+}

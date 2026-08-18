@@ -17,6 +17,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
+import psycopg
 import pytest
 
 from scout.config import settings
@@ -26,12 +27,30 @@ from scout.raw.keys import build_object_key
 PARTITION = date(2026, 8, 14)
 
 
+_PG_AVAILABLE: bool | None = None
+
+
+def _postgres_reachable() -> bool:
+    """Probe Postgres once per session, with a short timeout.
+
+    Cached and time-boxed on purpose: Task 9 promises tests/gmail/ runs with no
+    services, so a stopped database must skip the suite in seconds rather than
+    re-probing (or hanging) on every single test.
+    """
+    global _PG_AVAILABLE
+    if _PG_AVAILABLE is None:
+        try:
+            psycopg.connect(settings.gmail_database_url, connect_timeout=2).close()
+            _PG_AVAILABLE = True
+        except Exception:  # pragma: no cover - environment dependent
+            _PG_AVAILABLE = False
+    return _PG_AVAILABLE
+
+
 def _ledger_or_skip() -> GmailRawLedger:
+    if not _postgres_reachable():
+        pytest.skip("Postgres unavailable")
     ledger = GmailRawLedger(settings.gmail_database_url)
-    try:
-        ledger.connect().close()
-    except Exception as exc:  # pragma: no cover - environment dependent
-        pytest.skip(f"Postgres unavailable: {type(exc).__name__}")
     ledger.ensure_schema()
     return ledger
 

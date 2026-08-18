@@ -1,0 +1,165 @@
+{
+  "id": "1a0069f5c0a9301c",
+  "threadId": "1a0069f5c0a9301c",
+  "historyId": "60",
+  "originalHistoryId": "2750",
+  "internalDate": "1786817489000",
+  "labelIds": [
+    "UNREAD",
+    "IMPORTANT",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Hi, I&#39;ve locked myself out after too many wrong attempts this morning. Can someone reset it ?. I tried the self service link but it just spins and then times out. Bit urgent, I have a call at 2 PM",
+  "sizeEstimate": 7842,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp1071279qvb;        Sat, 15 Aug 2026 11:11:42 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a17:907:3e0a:b0:c19:473b:dc8f with SMTP id a640c23a62f3a-c2129a9a64bmr685790766b.3.1786817502438;        Sat, 15 Aug 2026 11:11:42 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786817502; cv=pass;        d=google.com; s=arc-20260327;        b=kix+uyRDSuTYmcVGMAVobc3ZKWhZY/vxBhQJgqkukjkUVmUBmyryN1tqqVgfaosrxd         qVcr7wPaB/W0NDNbeuA6lT/jnlii6EPnjyd7YE9JY50j0Y2DG+MlR/qeRUUYmg1Uv7Zc         2XlFDrPGc6lMQ35HS2xHB8pfP5e0Ig2jPuazaQf7U6Ay4UyNoVwUp2k3i+bwlPq4oXqb         6DGgRqY/pQcngsvPcOcARF0gmSKtfiHQcRIUcpRiVQtgQ8sobKcHaVgXyRTxKTa03+XA         B7P/3YI30BRNCYO5C+2i3W/0weqVPMmlTvaDPiG9MC2a55uB5MuQKP+YMF4qUET+wLBn         lLlw=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=LPGwHOIrYpDVIpvKvx35Oz9Q9J69EaDQmSYBCvfHkM8=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=lspYz2+RqIdgUmd2zJXYLKwxHn0Q1V/CfvTLJBeAdk8SKLY+jTlBVK9wgFxlUzjuVd         ZYjHUM84zGS/gvfdkiyRetHxLsng610KYyaFB/FrCiIimfpAEJNBATK2O9FACzknzDs6         gA09yIN6YlFt9h7U3KX37+9l5BoBmJZ0/NK2Mzfg0WNPqeQ8cJk00NhsLAP6QCo/dEy4         CYuMAMpy6dFLqedABg31Fm4XHzgeBLx8yJ5YCUT/lnheaYBC/jVAPCWq3MuNKRj20Bcm         vLyhBznox4+oXnHBK0FeRABRPmuKXubt1b6/noWffQAUwVz+amp2ozOqV/F4o7gF2vp7         bYcQ==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=NLIlPjn3;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.jennifer@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.jennifer@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f65.google.com (mail-sor-f65.google.com. [209.85.220.65])        by mx.google.com with SMTPS id a640c23a62f3a-c213a934395sor88731766b.18.2026.08.15.11.11.42        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sat, 15 Aug 2026 11:11:42 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) client-ip=209.85.220.65;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=NLIlPjn3;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.jennifer@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786817502; cv=none;        d=google.com; s=arc-20260327;        b=JJzDeD7F3SDoaGdGM6TP064Z6S408LgWOHeHpDPfqbD1MLATcBIgzTiXZYrEEijG3x         dmZTRXzdBWdGb/u8gvEBPKWQRlmv1mCCRSX5w6PwLVJApZlTJX+PupA59afvLY1pW6Yw         dlmti+oU2SZPPv4IDNInRhRXzee5SQSylvoenuaR9T5nnmNDr0W/2PBAMZyx0no6eFZI         P2P5GsYZHFBt1+egZxGGv4hHH3smFqZ2iJLo6zBitMVXwgmVdcH1qKIZrsbm8WKUgMeU         a7wvm3D0P0/6kAoWJTCKwrnlx54V7FWPOvy0813I0ZMuKTFKczOI2YCPNZh4x2hIzoZP         lMvQ=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=LPGwHOIrYpDVIpvKvx35Oz9Q9J69EaDQmSYBCvfHkM8=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=g7F6/BUz0EaNUkqIbDfp9fTN3fw5U6el3fAzcGdDJaN8A8itohoQ3vYu1fjqzGPM1B         Ip1wdkG3iwG3uRQCSn4kdF/igqtEM3WeJodA39nlOLUthuL/+ZiMXHwBmmeLigW3+c57         txiKIO0IiahIH6A4SOKdUQuhB08A8gb93dOIGta5ZJC9gGPgX8ehOsNURbSDtswGH9Mo         R2KcNBTy4rQQUlA/2VHKHJBL8NNz66Xapaus5tDvqw70m11VOOu5/GHxcQOmJ7+DEDiK         zDGOCeQhffQTmD44obm4J1I6eG76O5biCuvGC7f2A2+oQfOW1hhfhO65OpDYGrUEI2sw         CYAA==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786817502; x=1787422302; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=LPGwHOIrYpDVIpvKvx35Oz9Q9J69EaDQmSYBCvfHkM8=;        b=NLIlPjn3MBnCPf7hFPXb4EGkTKjfBdu/O/WajIuU3gTtn/m07S6T6Pf8rDsC+Pb3sD         fBBGrRVx/qMYSPRmp9H0lUoHA3QY4zrygy8+1I66w/JibKV78o2R5Dbu6yk644RivI4V         LvqKz+radR4n9/O1mjQcnyIcpt00TW1xNUj5h6gA7VG1uPDupBLqCIz8G7HMiPDr2FIY         xduD5HDMPAJLWn/Kr3LQLODqStp39Bd4xOZ0y4O9bvFtQank0iYaI7S0+fLAl8Y2BNo/         NjXuByJsT6vgJlTxO2lEabNQRl/xt6zAnnx02jIKnWdmBJtyWQoTOnbZW0Zf3lIRt35C         y/gQ=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786817502; x=1787422302;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=LPGwHOIrYpDVIpvKvx35Oz9Q9J69EaDQmSYBCvfHkM8=;        b=BofDua/JFySahwAh+AqxRmA6hDCtcZDU3rhLgEqGkriWWZRoxRArFu0agMTFqX9V6g         ceMwZL5JUNGXo8pKzBj6RHkXbvVHl+ai7HnCrJFN8xUkSiB2sgoDMjoBEuK+DPxtmZj3         RTCEP0fSgObpkmSSgcn3RXNDe9CkVFZPuz8h1JpY5kjvneUVL2tYkBjzu7Ech4jMemjz         zkiLH0zReZ9k2gncfHN3lk3V2gaWtizqJv9B7uZg7bEKIdEfMDC/ryU9dF5A4cdyQ1wC         cmF2BhOCw2l0ANDlkMer0+5J48geqO8S4SfRLcXaZ4f90n85YwD0Le3i6xltXwgrWDec         StFQ=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YzJB9/qyEuLCi6w6I79WMtSS66vUWEV0Cap3HIIU4hovsY/lXSU fK2UnI3XlxrNARnA6/menaWd4zCO9L3/Xh6qkghyeTQ8KlfFcNddrGnbo8sRvpGfm0orVWvhMuJ YpULre1Ckqasd81WmrQr+//Wn5wCMKnhVeMZyAEoT9TpRImE="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD10f18mYyz1rom/DwqhwLlJ9WpnMRPVAhiMqmLchgTT5VeZcx4GVsxGyHCjCVws 5xT6blmFQ21og5YtglKAUnxO65Qe5pPF3Tip9aLKd06kWsMWFwE3IZCvLxyxPTXGTTwmzsp8Cwb +n9S+/ghBVjzd97ZuVBkvm05ngDs8+v2RuxmGW44FZaVJOxxhDTCmTCOlD2R+XrRLp0Zwolb9+g /cDZ7hsJLoiNbECFbzKHLqQlwIGT0DBp9rSGskG9t2Bl+qZ3z8d6IgoV8CMsUyAUPTmCC76tWQX NJFsgoV8udyU/Lr8CwoW7XUedCPUIA4LHwQCJ/ssa+LNuA=="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a17:907:7250:b0:c20:21be:ea75 with SMTP id a640c23a62f3a-c2129b36c34mr648936566b.8.1786817501854; Sat, 15 Aug 2026 11:11:41 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds jennifer <motiveminds.jennifer@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Sat, 15 Aug 2026 23:41:29 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1VeAuDAUbjI8UiebPZjsBZM9kiXRJgHYhSakBzF0mV7ltz-kLZGpPVQ6no"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAGCCC9GX3MfSZwsw3eMOhJ-CXkhXovpcUXrBeQGJ5zQ=Z8uWEA@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "Password reset - locked out of my account"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"0000000000007a0106065919de8a\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 273,
+          "data": "SGksDQogSSd2ZSBsb2NrZWQgbXlzZWxmIG91dCBhZnRlciB0b28gbWFueSB3cm9uZyBhdHRlbXB0cyB0aGlzIG1vcm5pbmcuIENhbg0Kc29tZW9uZSByZXNldCBpdCA_LiBJIHRyaWVkIHRoZSBzZWxmIHNlcnZpY2UgbGluayBidXQgaXQganVzdCBzcGlucyBhbmQNCnRoZW4gdGltZXMgb3V0Lg0KIEJpdCB1cmdlbnQsIEkgaGF2ZSBhIGNhbGwgYXQgMiBQTSB0b2RheS4NCg0KVGhhbmtzDQpKZW5uaWZlciBDYXJ0ZXINClN1cHBvcnQgU2VydmljZXMsIE5vcnRod2luZCBUcmFkZXJz"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 358,
+          "data": "PGRpdiBkaXI9Imx0ciI-wqBIaSzCoDxkaXY-wqBJJiMzOTt2ZSBsb2NrZWQgbXlzZWxmIG91dCBhZnRlciB0b28gbWFueSB3cm9uZyBhdHRlbXB0cyB0aGlzIG1vcm5pbmcuIENhbiBzb21lb25lDQpyZXNldCBpdCA_LiBJIHRyaWVkIHRoZSBzZWxmIHNlcnZpY2UgbGluayBidXQgaXQganVzdCBzcGlucyBhbmQgdGhlbiB0aW1lcyBvdXQuwqA8L2Rpdj48ZGl2PsKgQml0IHVyZ2VudCwgSSBoYXZlIGEgY2FsbCBhdCAyIFBNIHRvZGF5LjwvZGl2PjxkaXY-wqA8L2Rpdj48ZGl2PlRoYW5rc8KgPC9kaXY-PGRpdj5KZW5uaWZlciBDYXJ0ZXI8L2Rpdj48ZGl2PlN1cHBvcnQgU2VydmljZXMsIE5vcnRod2luZCBUcmFkZXJzwqDCoDwvZGl2PjwvZGl2Pg"
+        }
+      }
+    ]
+  }
+}

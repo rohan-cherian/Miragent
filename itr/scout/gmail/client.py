@@ -429,3 +429,40 @@ def format_internal_date(ms: int | None) -> str:
         return datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc).isoformat()
     except Exception:
         return str(ms)
+
+
+def get_client(*, use_fixtures: bool | None = None, **kwargs):
+    """Return the Gmail client this environment should use.
+
+    Task 9: when ``USE_GMAIL_FIXTURES`` is true, hand back a FixtureClient
+    reading exported JSON instead of calling Gmail. Nothing upstream changes —
+    the sync, the scripts and the tests all keep calling the same methods, so a
+    dead token or dropped wifi stops being a demo-ending problem.
+
+    The import is local so that fixture code is not pulled in on the live path.
+    """
+    from scout.config import settings
+
+    if use_fixtures is None:
+        use_fixtures = settings.use_gmail_fixtures
+
+    if use_fixtures:
+        from scout.gmail.fixtures import FixtureClient
+
+        logger.info("Gmail: using offline fixtures (%s)", settings.gmail_fixtures_dir)
+        return FixtureClient(**kwargs)
+
+    # Live path defaults itself from settings, so get_client() takes no
+    # arguments on either branch — a factory the caller has to configure
+    # differently per branch is not much of a factory.
+    if not kwargs:
+        from scout.gmail.auth import GmailTokenStore
+
+        kwargs = {
+            "client_id": settings.gmail_client_id,
+            "client_secret": settings.gmail_client_secret,
+            "token_store": GmailTokenStore(settings.gmail_token_path),
+            "user_id": "me",
+            "refresh_token_fallback": settings.gmail_refresh_token,
+        }
+    return GmailClient(**kwargs)

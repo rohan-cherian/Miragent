@@ -1,0 +1,164 @@
+{
+  "id": "1a0094a9aec05a41",
+  "threadId": "1a0094a9aec05a41",
+  "historyId": "100",
+  "originalHistoryId": "2758",
+  "internalDate": "1786862268000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Got the new laptop yesterday. Outlook opens ok but it hasn&#39;t downloaded anything older than about 2 weeks, and the shared mailbox is missing completely. Old machine was fine. Do I need to be added",
+  "sizeEstimate": 7763,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp1524592qvb;        Sat, 15 Aug 2026 23:37:59 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a17:907:6c16:b0:c19:fb6e:5fec with SMTP id a640c23a62f3a-c212a1857aemr804815466b.18.1786862279348;        Sat, 15 Aug 2026 23:37:59 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786862279; cv=pass;        d=google.com; s=arc-20260327;        b=iculqSBS5PKL8j8Sgdfs2558Rum8Pup92kwSMPXxEYVEglKnw7qIIyfnqJQ2Iuqa1C         C44u6v965ccOjOUGBDt+xHU+mMdphKYIHZ1IbIfViI5M148PPSoIWbElUO23D+34PJPS         7Bow2IK+mDIpjmuGM+E+hC2Dg2iKS5NRCVUvkUFQuHgyJx+0QPAELWSNHh8rTZVZvBz/         /lwFTbSKecYpvucb06tHnBeKQvs9HVGLL5t1aid/K8pEi3xWNCecR4IsYN2ZtWZ/kZt0         MPt6HC11s4U2i93EzfkT/8UlKpyTeBUGbIjBdpWEIo52AmYgzIVfrD4X/40QVOZrgrJ5         Cnzg=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=7/TF8t+u/JYhGH1jARj2meAaGtSIlnj7AjmGzhaF/yA=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=BDifI/RrdkPF5b479zJ2LL7uzgZQUowlBRZp8O1BJFX/8q+G7kDrsd9xySc2LHf5Qa         fu6GEu29ocyhHvHtdbFs4up8+izaywjyOl1UjlR+5RMMH4nL1FL8N7YKKKoAUbbeGO2I         r8mzlb8jYnTEf9n+KWUD/5xsqqE561tVDMziUWVXuh7K51Ut1QB6laZmR43VJRnUGMcW         mgWJS0ig5XBSOayHE1pruosqNfV/weeW2QELB8D3GeTV9L+SQ3fIiGAOudo+Inx181fw         Bl5ugCNGUYxBMnCrE81P6aXeIQvPV7NmtGCy8PexMHqLWbdJc4fOfwK2pB2jista4wpk         pxpQ==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=\"G1AI/Pv1\";       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.jennifer@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.jennifer@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f65.google.com (mail-sor-f65.google.com. [209.85.220.65])        by mx.google.com with SMTPS id a640c23a62f3a-c21238e3b97sor198572066b.17.2026.08.15.23.37.59        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sat, 15 Aug 2026 23:37:59 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) client-ip=209.85.220.65;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=\"G1AI/Pv1\";       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.jennifer@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.jennifer@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786862279; cv=none;        d=google.com; s=arc-20260327;        b=EfEe/7ftX5LRkWkybWcUxrJ3KmzJsA0SV/CssAqCHSSD9/2rgO0S6yJvrFu5RIFsLz         hpbpKNHEpeE+3zTiAlu0vGfIS1Oz8eI/jcsrmi0/cmTR3L/gtmVODjNw/GBW7fvg35K+         3h6BGICUJO9Qye2Mk01EC1hwneqplUipui0kOWXSv9XvV80b/WeH1DrbEZqCN26PZU9z         vaa+8VhOn/moe1fQQuEFFwGUcUx6yUHXOzpJxIrgFfvjD3gWG7PR6mCxliuUt0BYtedF         niCt/sV816qQaqRpM25k4ENALvRBzaCZfQVSf/VCHxN5mivsxl3NCfITxJ8E0IlCFGY6         EjVg=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=7/TF8t+u/JYhGH1jARj2meAaGtSIlnj7AjmGzhaF/yA=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=LH5PwhWyw/7FyEAW8vJS9d14bz1vwSpNd4VI88V1JIydWn3aJydqzY/Q0+llmNowsm         FMTzNuYyIO+gC1+woEe10YpzL27HocBnBS61TW1RZf8rRZ1YtnlemNls3Dk93WnTfzNh         w434pwppmfBeTV4bAXIxFxNaVMeAg0HxiSg1qaUQ7I71HSDSF80SNLE8+wgeaiMJtoA2         Em3iyNtvqrOA/eLG0fXDBx55an80m3WJ86A53d0eqGiDMw3zPE25OlSJDGgzpihK+xur         i0FeXHtShGhfm6BU97LDx6XcFWgrdrH2Yiv7Bxr7U2FHSzP3udqTN8FcJ+ThiNOINNtM         iwwg==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786862279; x=1787467079; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=7/TF8t+u/JYhGH1jARj2meAaGtSIlnj7AjmGzhaF/yA=;        b=G1AI/Pv163g8f3SJvuj6qPwdIJf+jPx5jmlxpz1ii49/s4NR0FV43CSXGeUPOhxu2p         qAc6Wm98o7bNg9u0+eWy0bqrsbgD2sf7GWDE+il3buueQbccicJUEDDOqeOFPMl0pDOp         ceUJ3bRjHWyL8WTDhSIu0yZZKQg6ZTuu10CznGw/LhEbUf9SBFAHZyNwYbdj8FOBNP+p         8Hy5feBIhOoKhO423BlI9OVQP3UWathNZH8Br6YqY1Uzq9/zyvPEBNQErXD/Bq3FmxKY         wPYjfTWFU4R2YZSjimRzufQ9kzW4KFaNomOTgITzwftye+PhwTO1raUfBTpUVc4+i+y1         M5Dw=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786862279; x=1787467079;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=7/TF8t+u/JYhGH1jARj2meAaGtSIlnj7AjmGzhaF/yA=;        b=rpI+i/DFdoM4KMw7wv22HiF8c1mD2bgpfw0gh4qAyCp5/NtpuiIRoWVLhUNMjiQWyj         hXNkoyDOE033CVE55KwlwGLnANAuXjZG12z595wYgQNA+8Fz7NPH5ulbuuTs/FcGKO1r         2JDH48+/ISqlLdTfTVpe4XovR3zkTOVS+1IE9MswTsHr9VCMM+41thfbgUG6ge3IcdsQ         uNxo1vmu1GGED6kMgunD49oHPFuBvV4U1LsK+G6VCe5Hj0xdGLD3miIZ+p2dL6JKQtXU         maAFX/hR0bXiPfY8tvzAg3M9JNupiqAKxqpYaS0EGu60DooW0gAGdDnhrLiIpbpcR3mv         x9WA=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0Yx426IzmWbQu4ip1i4MrGTr67jQ/hrafNZ094eou54CzR7aHFgB NLsOMFNfcLjQZVzYo6vM0ivcaU7ESsEAYgfrgfwub4HP6USzRnfvIdAWh6DIBkXBfpJIdP6u4wI a0xwGLnCwxUMtlX88xTCve4mG8O2+8NC0ByILNBu73Zcd"
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD13UqkGDVFJGgEffo3/o4DC5yEjiE+I/mkS4puA0VDp/5J7ZQ4VefySHaKDPH6U 3/Wfox2njNJcaaNhuDvs7zz2tNWus3vH4yKrKRPQyL5PUyi9QmbMzQXMP6apziqDn+4uErwMPSk cqEnFbS4Ry3UEYKovP4IlAr+UdRedx0IPEgVjbh0PgOLv82SGx6bbEnkIUW99UVERN2WahegRPP 3C6NRHVylPuydr09G1XStA49T1DyDwcJuWefsX7sDuyUA4A96VzxHo4AeWBFuVaBK15PVp+EA83 HyPMOxKWFRZ+3zKwZ93lxOOHVEF7eh9nSmv8MZYX94uicA=="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a17:907:7b9f:b0:c16:5b32:32 with SMTP id a640c23a62f3a-c212a28de94mr743760766b.31.1786862278541; Sat, 15 Aug 2026 23:37:58 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds jennifer <motiveminds.jennifer@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Sun, 16 Aug 2026 12:07:48 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1XU8VX38MazXJp-Hae0WHpJ0HUMTsMLH3E0eDKLw4cK32sg-f0VPiCMAVc"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAGCCC9GHZQ=Jgwv7nNrTdHMPF2E-nuLz3Q7xmk5BJ+kOV8zn0w@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "New laptop - outlook not syncing"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"0000000000006008f60659244bf2\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 264,
+          "data": "R290IHRoZSBuZXcgbGFwdG9wIHllc3RlcmRheS4gT3V0bG9vayBvcGVucyBvayBidXQgaXQgaGFzbid0IGRvd25sb2FkZWQNCmFueXRoaW5nIG9sZGVyIHRoYW4gYWJvdXQgMiB3ZWVrcywgYW5kIHRoZSBzaGFyZWQgbWFpbGJveCBpcyBtaXNzaW5nDQpjb21wbGV0ZWx5LiBPbGQgbWFjaGluZSB3YXMgZmluZS4NCg0KRG8gSSBuZWVkIHRvIGJlIGFkZGVkIHRvIHRoZSBzaGFyZWQgbWFpbGJveCBhZ2FpbiBvbiB0aGUgbmV3IG9uZT8NCg0KSmVubmlmZXIgQ2FydGVy"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 335,
+          "data": "PGRpdiBkaXI9Imx0ciI-R290IHRoZSBuZXcgbGFwdG9wIHllc3RlcmRheS4gT3V0bG9vayBvcGVucyBvayBidXQgaXQgaGFzbiYjMzk7dCBkb3dubG9hZGVkIGFueXRoaW5nDQpvbGRlciB0aGFuIGFib3V0IDIgd2Vla3MsIGFuZCB0aGUgc2hhcmVkIG1haWxib3ggaXMgbWlzc2luZyBjb21wbGV0ZWx5LiBPbGQNCm1hY2hpbmUgd2FzIGZpbmUuwqA8ZGl2Pjxicj48L2Rpdj48ZGl2PkRvIEkgbmVlZCB0byBiZSBhZGRlZCB0byB0aGUgc2hhcmVkIG1haWxib3ggYWdhaW4gb24gdGhlIG5ldyBvbmU_wqA8L2Rpdj48ZGl2Pjxicj48L2Rpdj48ZGl2Pkplbm5pZmVyIENhcnRlcjwvZGl2PjwvZGl2Pg"
+        }
+      }
+    ]
+  }
+}

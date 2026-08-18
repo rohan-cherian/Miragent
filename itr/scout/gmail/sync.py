@@ -33,12 +33,6 @@ import httpx
 
 from scout.config import settings
 from scout.gmail.client import GmailClient
-from scout.gmail.customers import (
-    extract_email_address,
-    gmail_from_query,
-    is_customer_sender,
-    parse_sender_list,
-)
 from scout.gmail.envelope import (
     build_attachment_entry,
     build_envelope,
@@ -110,7 +104,6 @@ class RawSyncResult:
     written: int = 0
     skipped_duplicates: int = 0  # HEAD said the object is already there
     skipped_known: int = 0  # ledger pre-filter, no API call spent
-    skipped_non_customer: int = 0  # sender not on the allowlist
     skipped_dropped: int = 0  # Task 8: system / bulk / category mail
     healed_canonical: int = 0  # already in the bucket, backfilled into src_gmail
     skipped_malformed: int = 0
@@ -126,7 +119,6 @@ class RawSyncResult:
             f"mode={self.mode} discovered={self.discovered} "
             f"written={self.written} "
             f"dupes_skipped={self.skipped_known + self.skipped_duplicates} "
-            f"non_customer={self.skipped_non_customer} "
             f"dropped={self.skipped_dropped} healed={self.healed_canonical} "
             f"malformed={self.skipped_malformed} failed={self.failed} "
             f"attachments={self.attachments_written} bytes={self.bytes_written}"
@@ -153,8 +145,6 @@ class GmailRawSync:
         query: str | None = None,
         page_size: int | None = None,
         use_ledger_prefilter: bool = True,
-        customer_only: bool | None = None,
-        customer_senders: str | None = None,
         run_store: Any = None,
     ) -> None:
         # Injectable so tests exercise the real connector_run flow without
@@ -184,14 +174,6 @@ class GmailRawSync:
         self.query = query if query is not None else settings.gmail_raw_query
         self.page_size = page_size or settings.gmail_raw_page_size
         self.use_ledger_prefilter = use_ledger_prefilter
-        self.customer_only = (
-            customer_only if customer_only is not None else settings.gmail_customer_only
-        )
-        self.allowed_senders = parse_sender_list(
-            customer_senders
-            if customer_senders is not None
-            else settings.gmail_customer_senders
-        )
         self._pending_backfill_token: str | None = None
         self._run: Any = None
         self._upsert_failed = False
@@ -401,34 +383,10 @@ class GmailRawSync:
         except Exception:  # bookkeeping must never break ingestion
             logger.exception("Could not record skip for %s", message_id)
 
-    # ── customer allowlist ────────────────────────────────────────────────────
-
     def _listing_query(self) -> str | None:
-        """
-        Gmail search string for the backfill listing.
-
-        The allowlist is pushed server-side so a backfill never downloads mail
-        it would only discard. History mode cannot do this — ``history.list``
-        takes no query — so that path filters after fetch instead.
-        """
-        parts = [p for p in (self.query or "").strip().split() if p]
-        if self.customer_only:
-            clause = gmail_from_query(self.allowed_senders)
-            if clause:
-                parts.append(clause)
-        return " ".join(parts) if parts else None
-
-    def _is_customer(self, raw_message: dict[str, Any]) -> tuple[bool, str]:
-        """(allowed, sender_address) for one fetched message."""
-        headers = (raw_message.get("payload") or {}).get("headers") or []
-        from_header = next(
-            (h.get("value", "") for h in headers if str(h.get("name", "")).lower() == "from"),
-            "",
-        )
-        sender = extract_email_address(from_header) or "(unknown)"
-        if not self.customer_only:
-            return True, sender
-        return is_customer_sender(from_header, self.allowed_senders), sender
+        """Optional Gmail search string for the backfill listing (whole mailbox when empty)."""
+        q = (self.query or "").strip()
+        return q or None
 
     # ── discovery ─────────────────────────────────────────────────────────────
 
@@ -582,10 +540,7 @@ class GmailRawSync:
             self._note_skip(message_id, "malformed", "Gmail response has no message id")
             return False
 
-        # Task 8: system and bulk mail, BEFORE the customer allowlist. Order
-        # matters — the allowlist would reject a Google security alert as
-        # merely "non_customer", losing the specific reason code that tells us
-        # which policy fired.
+        # Task 8: system and bulk mail only — every other message is ingested.
         try:
             parsed = parse_message(raw_message)
         except MimeParseError as exc:
@@ -603,14 +558,6 @@ class GmailRawSync:
             self._note_skip(payload_id, reason or "dropped", f"from {parsed.from_address}")
             if self._run is not None:
                 self._run.note_drop(payload_id, reason or "dropped")
-            return False
-
-        # Customer allowlist. The backfill listing is already filtered
-        # server-side; this catches the history path, which cannot be.
-        allowed, sender = self._is_customer(raw_message)
-        if not allowed:
-            result.skipped_non_customer += 1
-            self._note_skip(payload_id, "non_customer", f"from {sender}")
             return False
 
         internal_raw = raw_message.get("internalDate")
@@ -810,7 +757,6 @@ class GmailRawSync:
         run.messages_skipped = (
             result.skipped_known
             + result.skipped_duplicates
-            + result.skipped_non_customer
             + result.skipped_malformed
             + result.skipped_dropped
         )

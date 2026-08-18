@@ -2,7 +2,7 @@
 itr/scout/config.py — Centralised configuration for ITR Slice 1.
 
 Shared surface [RS] — both sides have now landed here:
-  Rohan:          Gmail OAuth + scopes, MinIO raw lake, customer allowlist.
+  Rohan:          Gmail OAuth + scopes, MinIO raw lake.
   Sutej (Task 3): DATABASE_URL, TENANT_ID, thresholds, embeddings pins,
                   LLM tiers, ACTION_MODE.
 
@@ -86,20 +86,9 @@ class Settings(BaseSettings):
     # recorded with metadata + sha256 but no bytes (truncated=true).
     gmail_raw_max_attachment_bytes: int = 26_214_400  # 25 MiB
     gmail_raw_include_spam_trash: bool = True
-    # Optional extra Gmail search filter for backfill, ANDed with the customer
-    # allowlist below. Empty = no extra restriction.
+    # Optional Gmail search filter for backfill. Empty = whole mailbox.
+    # Task 8 still drops system/bulk mail after fetch.
     gmail_raw_query: str = ""
-
-    # ── Customer allowlist ────────────────────────────────────────────────────
-    # Only mail FROM these senders is stored. Everything else (own sent mail,
-    # Google alerts, personal traffic) is skipped and logged. Entries may be a
-    # full address or a bare "@domain".
-    gmail_customer_only: bool = True
-    gmail_customer_senders: str = (
-        "motiveminds.vihaan@gmail.com,"
-        "motiveminds.jennifer@gmail.com,"
-        "motiveminds.ojasvi@gmail.com"
-    )
     gmail_raw_page_size: int = 100
     # Safety cap per run so one invocation cannot spin forever on a huge mailbox.
     gmail_raw_max_per_run: int = 500

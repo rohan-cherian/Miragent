@@ -85,7 +85,7 @@ def run_sync_now(account_id: str | None = None) -> dict[str, Any]:
             "discovered": result.discovered,
             "written": result.written,
             "duplicates_skipped": result.skipped_known + result.skipped_duplicates,
-            "skipped_non_customer": result.skipped_non_customer,
+            "skipped_dropped": result.skipped_dropped,
             "skipped_malformed": result.skipped_malformed,
             "failed": result.failed,
             "attachments_written": result.attachments_written,

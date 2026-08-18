@@ -3,6 +3,7 @@ Gmail integration (Desktop OAuth + readonly API).
 
 Raw lake pipeline only:
   scout.gmail.sync — EVERY message -> JSON -> MinIO raw bucket
+  (Task 8 still drops system / bulk mail)
 """
 
 from scout.gmail.auth import (
@@ -12,19 +13,11 @@ from scout.gmail.auth import (
     refresh_access_token,
 )
 from scout.gmail.client import GmailClient, GmailMessage
-from scout.gmail.customers import (
-    DEFAULT_CUSTOMER_SENDERS,
-    extract_email_address,
-    gmail_from_query,
-    is_customer_sender,
-    parse_sender_list,
-)
 from scout.gmail.envelope import build_envelope, serialise
 from scout.gmail.raw_ledger import GmailRawLedger, RawSyncState
 from scout.gmail.sync import GmailRawSync, RawSyncResult, build_raw_sync
 
 __all__ = [
-    "DEFAULT_CUSTOMER_SENDERS",
     "GmailClient",
     "GmailMessage",
     "GmailRawLedger",
@@ -36,10 +29,6 @@ __all__ = [
     "build_envelope",
     "build_raw_sync",
     "exchange_code",
-    "extract_email_address",
-    "gmail_from_query",
-    "is_customer_sender",
-    "parse_sender_list",
     "refresh_access_token",
     "serialise",
 ]

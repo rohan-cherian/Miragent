@@ -239,10 +239,6 @@ def _sync(gmail, ledger, lake, **kw: Any) -> GmailRawSync:
         query="",
         page_size=100,
         use_ledger_prefilter=kw.get("use_ledger_prefilter", True),
-        # Tests default to no allowlist so existing cases keep their meaning;
-        # the allowlist tests opt in explicitly.
-        customer_only=kw.get("customer_only", False),
-        customer_senders=kw.get("customer_senders"),
     )
 
 
@@ -485,22 +481,17 @@ def test_written_object_keeps_full_fidelity_extras():
     assert doc["label_ids"] == ["INBOX"]
 
 
-def test_with_allowlist_off_every_message_is_ingested():
+def test_every_message_is_ingested():
     gmail = FakeGmail({f"m{i}": _raw_message(f"m{i}", ms=AUG14) for i in range(3)})
     ledger, lake = FakeLedger(), FakeLake()
-    assert _sync(gmail, ledger, lake, customer_only=False).run().written == 3
+    assert _sync(gmail, ledger, lake).run().written == 3
 
 
-# ── customer allowlist ────────────────────────────────────────────────────────
+# ── Task 8 drops (system / bulk) — still applied; no sender allowlist ─────────
 
 VIHAAN = "Vihaan Banerjee <motiveminds.vihaan@gmail.com>"
 JENNIFER = "Jennifer Carter <motiveminds.jennifer@gmail.com>"
 OJASVI = "Ojasvi Goda <motiveminds.ojasvi@gmail.com>"
-ALLOWLIST = (
-    "motiveminds.vihaan@gmail.com,"
-    "motiveminds.jennifer@gmail.com,"
-    "motiveminds.ojasvi@gmail.com"
-)
 
 
 def _mixed_mailbox() -> FakeGmail:
@@ -510,62 +501,44 @@ def _mixed_mailbox() -> FakeGmail:
         "c3": _raw_message("c3", ms=AUG14, sender=OJASVI),
         "n1": _raw_message("n1", ms=AUG14, sender="Rohan <rohancherian289@gmail.com>"),
         "n2": _raw_message("n2", ms=AUG14, sender="Google <no-reply@google.com>"),
-        "n3": _raw_message("n3", ms=AUG14, sender="Us <motiveminds.itsupport@gmail.com>"),
+        "n3": _raw_message("n3", ms=AUG14, sender="Me <motiveminds.itsupport@gmail.com>"),
     })
 
 
-def test_only_customer_mail_is_stored():
+def test_all_non_system_mail_is_stored():
+    """Whole mailbox is ingested; only Task 8 system/bulk senders are dropped."""
     gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
-    result = _sync(
-        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
-    ).run()
+    result = _sync(gmail, ledger, lake).run()
 
-    assert result.written == 3
-    # n2 is no-reply@google.com, caught by the Task 8 drop filter before the
-    # allowlist sees it — so it counts as dropped, not merely non-customer.
-    assert result.skipped_non_customer == 2
+    assert result.written == 5
     assert result.skipped_dropped == 1
     assert sorted(lake.objects) == [
         "gmail/2026/08/14/email_c1.json",
         "gmail/2026/08/14/email_c2.json",
         "gmail/2026/08/14/email_c3.json",
+        "gmail/2026/08/14/email_n1.json",
+        "gmail/2026/08/14/email_n3.json",
     ]
 
 
-def test_non_customer_mail_is_logged_not_silently_dropped():
+def test_system_mail_is_logged_not_silently_dropped():
     gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
-    _sync(gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST).run()
+    _sync(gmail, ledger, lake).run()
 
     reasons = {s["reason"] for s in ledger.skips}
-    assert reasons == {"non_customer", "system_sender"}
-    assert len(ledger.skips) == 3, "every skip is recorded, whichever filter fired"
-    assert any("rohancherian289@gmail.com" in s["detail"] for s in ledger.skips)
+    assert reasons == {"system_sender"}
+    assert len(ledger.skips) == 1
+    assert any("no-reply@google.com" in s["detail"] for s in ledger.skips)
 
 
 def test_system_mail_is_dropped_with_its_own_reason_code():
-    """Task 8: a Google alert must not be logged as a generic non-customer."""
+    """Task 8: a Google alert must not reach the corpus."""
     store = FakeRunStore()
     gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
-    _sync(
-        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST, run_store=store
-    ).run()
+    _sync(gmail, ledger, lake, run_store=store).run()
 
-    # The doc's acceptance check reads this off raw_ingest.runs.errors.
     assert any(e.get("reason") == "system_sender" for e in store.last_run["errors"])
     assert "gmail/2026/08/14/email_n2.json" not in lake.objects
-
-
-def test_own_sent_mail_is_never_stored():
-    """The support mailbox's own outgoing mail must not become customer data."""
-    gmail = FakeGmail({
-        "s1": _raw_message("s1", ms=AUG14, sender="Us <motiveminds.itsupport@gmail.com>")
-    })
-    ledger, lake = FakeLedger(), FakeLake()
-    result = _sync(
-        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
-    ).run()
-    assert result.written == 0
-    assert lake.objects == {}
 
 
 def test_google_security_alert_is_rejected():
@@ -574,49 +547,31 @@ def test_google_security_alert_is_rejected():
         "g1": _raw_message("g1", ms=AUG14, sender="Google <no-reply@google.com>")
     })
     ledger, lake = FakeLedger(), FakeLake()
-    assert _sync(
-        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
-    ).run().written == 0
+    assert _sync(gmail, ledger, lake).run().written == 0
 
 
-def test_backfill_pushes_allowlist_into_the_gmail_query():
-    """Server-side filtering — a backfill must not download mail it discards."""
-    gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
-    sync = _sync(gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST)
-    q = sync._listing_query()
-    assert q is not None
-    assert "from:motiveminds.vihaan@gmail.com" in q
-    assert "from:motiveminds.jennifer@gmail.com" in q
-    assert "from:motiveminds.ojasvi@gmail.com" in q
-
-
-def test_extra_query_is_combined_with_the_allowlist():
+def test_optional_listing_query_is_passed_through():
     gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
     sync = GmailRawSync(
         client=gmail, ledger=ledger, lake=lake,
         account_id="support@motiveminds.com",
-        customer_only=True, customer_senders=ALLOWLIST, query="in:inbox",
+        query="in:inbox",
     )
-    q = sync._listing_query()
-    assert "in:inbox" in q and "from:motiveminds.vihaan@gmail.com" in q
+    assert sync._listing_query() == "in:inbox"
+    assert _sync(gmail, ledger, lake)._listing_query() is None
 
 
-def test_history_path_filters_after_fetch():
-    """history.list takes no query, so the check must also run per message."""
+def test_history_path_ingests_all_non_system_mail():
+    """history.list takes no query; Task 8 still drops after fetch."""
     gmail, ledger, lake = _mixed_mailbox(), FakeLedger(), FakeLake()
     gmail.history_returns_all = True
     ledger.state = RawSyncState(
         account_id="support@motiveminds.com", history_id="1", backfill_done=True
     )
-    result = _sync(
-        gmail, ledger, lake, customer_only=True, customer_senders=ALLOWLIST
-    ).run()
+    result = _sync(gmail, ledger, lake).run()
 
     assert result.mode == "history"
-    assert result.written == 3
-    # Same split as the backfill path: 2 non-customers, plus no-reply@google.com
-    # taken by the Task 8 drop filter first.
-    assert result.skipped_non_customer == 2
+    assert result.written == 5
     assert result.skipped_dropped == 1
 
 

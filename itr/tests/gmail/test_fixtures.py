@@ -225,7 +225,6 @@ def test_full_sync_runs_offline_against_fixtures(fixture_dir):
         ledger=ledger,
         run_store=store,
         account_id="support@motiveminds.com",
-        customer_only=False,  # the fixtures are synthetic senders
         max_per_run=100,
     ).run()
 
@@ -253,7 +252,6 @@ def test_offline_sync_is_idempotent(fixture_dir):
             ledger=ledger,
             run_store=FakeRunStore(),
             account_id="support@motiveminds.com",
-            customer_only=False,
             max_per_run=100,
         ).run()
 

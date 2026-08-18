@@ -112,6 +112,7 @@ class RawSyncResult:
     skipped_known: int = 0  # ledger pre-filter, no API call spent
     skipped_non_customer: int = 0  # sender not on the allowlist
     skipped_dropped: int = 0  # Task 8: system / bulk / category mail
+    healed_canonical: int = 0  # already in the bucket, backfilled into src_gmail
     skipped_malformed: int = 0
     failed: int = 0
     attachments_written: int = 0
@@ -126,7 +127,7 @@ class RawSyncResult:
             f"written={self.written} "
             f"dupes_skipped={self.skipped_known + self.skipped_duplicates} "
             f"non_customer={self.skipped_non_customer} "
-            f"dropped={self.skipped_dropped} "
+            f"dropped={self.skipped_dropped} healed={self.healed_canonical} "
             f"malformed={self.skipped_malformed} failed={self.failed} "
             f"attachments={self.attachments_written} bytes={self.bytes_written}"
         )
@@ -351,6 +352,40 @@ class GmailRawSync:
             )
             conn.commit()
         return True
+
+    def _heal_canonical(
+        self,
+        *,
+        raw_message: dict[str, Any],
+        parsed: Any,
+        object_path: str,
+        checksum_sha256: str,
+        internal_ms: int | None,
+        result: RawSyncResult,
+    ) -> None:
+        """Backfill src_gmail for an object the bucket already holds.
+
+        Upserts are idempotent, so replaying an existing object is safe and
+        converges rather than duplicating. Failures are recorded but never
+        raised: healing is catch-up work, and it must not fail a run whose
+        objects are all safely stored.
+        """
+        if self._run is None or self.ledger is None or not hasattr(self.ledger, "connect"):
+            return
+        try:
+            self.upsert_canonical(
+                raw_message=raw_message,
+                parsed=parsed,
+                object_path=object_path,
+                checksum_sha256=checksum_sha256,
+                attachments=[],
+                internal_ms=internal_ms,
+                connector_run_id=str(self._run.id),
+            )
+            result.healed_canonical += 1
+        except Exception as exc:
+            result.errors.append(f"{parsed.external_id}: canonical heal failed: {exc}")
+            logger.exception("Could not heal src_gmail for %s", object_path)
 
     def _note_skip(self, message_id: str | None, reason: str, detail: str = "") -> None:
         logger.info("Skipping %s: %s %s", message_id, reason, detail)
@@ -594,6 +629,20 @@ class GmailRawSync:
             result.skipped_duplicates += 1
             logger.info("Duplicate, already in bucket: %s -> %s", payload_id, key)
             self._heal_ledger(payload_id, raw_message, key, internal_ms, stat)
+            # The object is already stored, but src_gmail may not know about it:
+            # every object written before Task 5/6 existed predates the canonical
+            # grain entirely. Without healing here the raw lake and src_gmail
+            # diverge permanently, because this path returns before the upsert
+            # below and a duplicate is never re-PUT. Same self-healing principle
+            # as _heal_ledger, applied to the canonical tables.
+            self._heal_canonical(
+                raw_message=raw_message,
+                parsed=parsed,
+                object_path=key,
+                checksum_sha256=(stat.get("metadata") or {}).get("content-sha256") or "",
+                internal_ms=internal_ms,
+                result=result,
+            )
             return False
 
         # Same day folder as the message, so the two never drift apart.

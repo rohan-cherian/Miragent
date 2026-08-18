@@ -83,6 +83,19 @@ def _provenance(
     }
 
 
+def _columns(row: Any, *names: str) -> tuple[Any, ...]:
+    """Read RETURNING columns whatever row factory the caller's connection uses.
+
+    The connection is supplied by the caller, so the row may be a tuple (psycopg
+    default) or a mapping (``dict_row``, which GmailRawLedger uses). Indexing
+    positionally works for one and raises KeyError for the other, so resolve by
+    name when we can and fall back to position.
+    """
+    if isinstance(row, dict):
+        return tuple(row[n] for n in names)
+    return tuple(row[i] for i in range(len(names)))
+
+
 def _execute_upsert(
     conn: psycopg.Connection,
     sql: str,
@@ -94,7 +107,8 @@ def _execute_upsert(
         row = cur.fetchone()
     if row is None:  # pragma: no cover - DO UPDATE always returns a row
         raise RuntimeError("upsert returned no row; expected id and was_new")
-    return UpsertResult(id=row[0], was_new=bool(row[1]))
+    row_id, was_new = _columns(row, "id", "was_new")
+    return UpsertResult(id=row_id, was_new=bool(was_new))
 
 
 # ── mailbox ──────────────────────────────────────────────────────────────────
@@ -227,7 +241,10 @@ def recompute_thread_rollup(
         row = cur.fetchone()
     if row is None:
         raise ValueError(f"no such thread: {thread_id}")
-    return int(row[0]), row[1], row[2]
+    count, first_ms, last_ms = _columns(
+        row, "message_count", "first_internal_date_ms", "last_internal_date_ms"
+    )
+    return int(count), first_ms, last_ms
 
 
 # ── message ──────────────────────────────────────────────────────────────────

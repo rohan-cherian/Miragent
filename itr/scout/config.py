@@ -125,6 +125,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:itr@localhost:5434/itr"
     # MinIO settings live in the raw-lake block above — one definition only.
     qdrant_url: str = "http://localhost:6333"
+    qdrant_collection_name: str = "itr360_chunks"  # Task 17 (index) — Qdrant collection for embedded chunks
 
     # ── Tenancy ──────────────────────────────────────────────────────────────
     # Doc: "fixed uuid for Northwind Traders" — placeholder until the real

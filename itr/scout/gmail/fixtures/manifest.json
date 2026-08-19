@@ -1,7 +1,7 @@
 {
   "account_id": "motiveminds.itsupport@gmail.com",
   "source_prefix": "gmail",
-  "message_count": 16,
+  "message_count": 18,
   "message_order": [
     "19fffb7a8c00bf8c",
     "19fffd7b5c1f2564",
@@ -18,7 +18,9 @@
     "1a00de1b562fc367",
     "1a00de43c2b02073",
     "1a00ed023a5fe85e",
-    "1a0132f0f9801cb2"
+    "1a0132f0f9801cb2",
+    "1a0150c6f7e33c2a",
+    "1a0182548e42e65c"
   ],
   "files": {
     "19fffb7a8c00bf8c": "0001_19fffb7a8c00bf8c.json",
@@ -36,7 +38,9 @@
     "1a00de1b562fc367": "0013_1a00de1b562fc367.json",
     "1a00de43c2b02073": "0014_1a00de43c2b02073.json",
     "1a00ed023a5fe85e": "0015_1a00ed023a5fe85e.json",
-    "1a0132f0f9801cb2": "0016_1a0132f0f9801cb2.json"
+    "1a0132f0f9801cb2": "0016_1a0132f0f9801cb2.json",
+    "1a0150c6f7e33c2a": "0017_1a0150c6f7e33c2a.json",
+    "1a0182548e42e65c": "0018_1a0182548e42e65c.json"
   },
   "thread_of": {
     "19fffb7a8c00bf8c": "19fffb7a8c00bf8c",
@@ -54,7 +58,9 @@
     "1a00de1b562fc367": "1a00de1b562fc367",
     "1a00de43c2b02073": "1a00de43c2b02073",
     "1a00ed023a5fe85e": "1a00ed023a5fe85e",
-    "1a0132f0f9801cb2": "1a0132f0f9801cb2"
+    "1a0132f0f9801cb2": "1a0132f0f9801cb2",
+    "1a0150c6f7e33c2a": "1a0150c6f7e33c2a",
+    "1a0182548e42e65c": "1a0182548e42e65c"
   },
   "threads": {
     "19fffb7a8c00bf8c": [
@@ -100,6 +106,12 @@
     ],
     "1a0132f0f9801cb2": [
       "1a0132f0f9801cb2"
+    ],
+    "1a0150c6f7e33c2a": [
+      "1a0150c6f7e33c2a"
+    ],
+    "1a0182548e42e65c": [
+      "1a0182548e42e65c"
     ]
   },
   "history": [
@@ -182,8 +194,18 @@
       "history_id": 160,
       "message_id": "1a0132f0f9801cb2",
       "thread_id": "1a0132f0f9801cb2"
+    },
+    {
+      "history_id": 170,
+      "message_id": "1a0150c6f7e33c2a",
+      "thread_id": "1a0150c6f7e33c2a"
+    },
+    {
+      "history_id": 180,
+      "message_id": "1a0182548e42e65c",
+      "thread_id": "1a0182548e42e65c"
     }
   ],
-  "final_history_id": 160,
+  "final_history_id": 180,
   "attachments": {}
 }

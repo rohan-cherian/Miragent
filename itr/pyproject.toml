@@ -36,6 +36,12 @@ presidio-analyzer = "^2.2.364"
 presidio-anonymizer = "^2.2.364"
 spacy = "^3.8.15"
 
+# ORM — canonical layer models (Task 4: Provenance mixin)
+sqlalchemy = "^2.0.52"
+
+# Schema migrations (Task 10: canonical itr360 tables)
+alembic = "^1.19.1"
+
 # ─────────────────────────────────────────────────────────
 # DEV-ONLY DEPENDENCIES
 # Never installed in production images

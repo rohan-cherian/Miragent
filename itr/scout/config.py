@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     minio_secure: bool = False  # True only once this endpoint is behind HTTPS
     minio_bucket_raw: str = "raw"
     qdrant_url: str = "http://localhost:6333"
+    qdrant_collection_name: str = "itr360_chunks"  # Task 17 (index) — Qdrant collection for embedded chunks
 
     # ── Tenancy ──────────────────────────────────────────────────────────────
     # Doc: "fixed uuid for Northwind Traders" — placeholder until the real

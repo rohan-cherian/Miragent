@@ -42,6 +42,9 @@ sqlalchemy = "^2.0.52"
 # Schema migrations (Task 10: canonical itr360 tables)
 alembic = "^1.19.1"
 
+# Vector index (Task 17 — chunk, embed, index)
+qdrant-client = "^1.19.0"
+
 # ─────────────────────────────────────────────────────────
 # DEV-ONLY DEPENDENCIES
 # Never installed in production images

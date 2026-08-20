@@ -16,7 +16,8 @@ a normal "relation does not exist" error at the SELECT step below —
 expected until Task 5 lands, not something this script papers over.
 
 KNOWN LANDMINE, documented not fixed: normalise_message() reads
-src_row["connector_run_id"] (scout/canonical/normalise/gmail.py).
+src_row["connector_run_id"] (scout/canonical/normalise/gmail.py) — a real
+column since schema/003 landed.
 If the source rows lack that column (e.g. a differently-shaped
 tickets table), every record raises KeyError -> quarantined as
 GM-ERR-1001, and the run ends with persisted=0 failed=len(rows).
@@ -112,13 +113,14 @@ def _fetch_unprocessed_rows(engine, thread_id_filter: str | None) -> list[dict]:
         WHERE NOT EXISTS (
             SELECT 1 FROM itr360.message AS m
             WHERE m.source_system = :source_system
-              AND m.external_id = src.message_id::text
+              AND m.external_id = src.external_id
         )
     """
     params: dict = {"source_system": SOURCE_SYSTEM}
 
     if thread_id_filter is not None:
-        query += " AND src.thread_id = :thread_id"
+        # src.thread_id is uuid (schema/003) — cast the text filter value.
+        query += " AND src.thread_id = CAST(:thread_id AS uuid)"
         params["thread_id"] = thread_id_filter
 
     with engine.connect() as conn:
@@ -175,7 +177,7 @@ def run(case_id: str | None, dry_run: bool) -> int:
 
     with Session(engine) as session:
         for row in rows:
-            src_message_id = row.get("message_id")
+            src_message_id = row.get("external_id")  # gmail messageId (schema/003)
 
             try:
                 print(f"{LOG_PREFIX} redact+normalise message_id={src_message_id}")
@@ -198,8 +200,15 @@ def run(case_id: str | None, dry_run: bool) -> int:
                 # the unresolved band (waterfall.py), so passing it
                 # through is the "no context when unresolved" rule by
                 # construction — no extra branching needed here.
+                # thread_id str-cast: source column is uuid (schema/003),
+                # itr360.message.thread_id and the correlation lookup are Text.
                 case, reason = find_or_create_case(
-                    {**row, "sent_at": canonical["sent_at"]}, match.person_id
+                    {
+                        **row,
+                        "sent_at": canonical["sent_at"],
+                        "thread_id": str(row["thread_id"]) if row.get("thread_id") else None,
+                    },
+                    match.person_id,
                 )
                 canonical["case_id"] = case.id
                 canonical["person_id"] = match.person_id

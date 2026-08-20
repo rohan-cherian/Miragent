@@ -13,10 +13,12 @@ the database.
 
 ASSUMPTION: `src_message` is Task 5/7's shape (Rohan's side), not
 verified against real data in this workspace. Expected fields, all
-optional except from_email: from_email, from_display_name, thread_id,
-signature_block (may be None if Task 7's signature extraction hasn't
-landed — that signal just contributes 0), and message_id (same
-assumed src_gmail.message.message_id field Task 13's
+optional except from_address: from_address (citext, confirmed against
+schema/003_src_gmail_regrain.sql), from_display_name, thread_id (a
+uuid FK into src_gmail.thread — str-cast before audit serialization),
+signature_block (real column, Task 7 landed — populated rows now feed
+the 0.40 signature signal), and external_id (the Gmail messageId,
+same dedup key Task 13's
 normalise_message() already relies on). `src_message` may be a dict or
 any object with these as attributes.
 
@@ -38,7 +40,6 @@ from sqlalchemy.orm import Session
 
 from scout.canonical.identity import queue
 from scout.canonical.models import Person, PersonEmailAlias
-from scout.canonical.normalise.gmail import SOURCE_SYSTEM
 from scout.config import settings
 from scout.governance.audit import write as audit_write
 
@@ -195,7 +196,7 @@ def _audit_resolution(from_email, thread_id, person_id, band, confidence, eviden
         action="identity_resolution",
         category="identity",
         case_id=None,  # no case exists yet at this point in the pipeline
-        inputs={"from_email": from_email, "thread_id": thread_id},
+        inputs={"from_address": from_email, "thread_id": thread_id},
         outputs={
             "person_id": str(person_id) if person_id is not None else None,
             "band": band,
@@ -226,11 +227,14 @@ def resolve(src_message, run: Run) -> Match:
     still opens its own connection separately, which is out of scope
     here and fine.
     """
-    from_email = _field(src_message, "from_email")
+    from_email = _field(src_message, "from_address")  # citext, schema/003
     from_display_name = _field(src_message, "from_display_name")
-    thread_id = _field(src_message, "thread_id")
+    # uuid FK into src_gmail.thread — str-cast: it lands in JSONB audit
+    # inputs and in queue rows, and a raw UUID is not JSON-serializable.
+    raw_thread_id = _field(src_message, "thread_id")
+    thread_id = str(raw_thread_id) if raw_thread_id is not None else None
     signature_block = _field(src_message, "signature_block")
-    message_id = _field(src_message, "message_id")
+    message_id = _field(src_message, "external_id")  # gmail messageId, the dedup key
 
     engine = _get_engine()
 

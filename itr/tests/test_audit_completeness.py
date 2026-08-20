@@ -73,7 +73,7 @@ that the abstention path never reaches the model.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from qdrant_client import QdrantClient
@@ -163,7 +163,7 @@ def _persist_inbound_message(
     engine, case_id: uuid.UUID, person_id: uuid.UUID | None,
     thread_id: str, src_message_id: str, subject: str, body: str, sent_at: datetime,
 ) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with Session(engine) as session:
         session.add(
             Message(
@@ -239,7 +239,7 @@ async def _drive_pipeline_through_every_stage(engine, persona_email: str) -> tup
     separately (see STEP 1 finding 2)."""
     thread_id = f"test-thread-{uuid.uuid4()}"
     src_message_id = f"test-msg-{uuid.uuid4()}"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     subject = "Licence key stopped working after renewal"
     body = (
         "My licence key stopped working after the renewal went through. "
@@ -247,12 +247,12 @@ async def _drive_pipeline_through_every_stage(engine, persona_email: str) -> tup
     )
 
     src_message = {
-        "from_email": persona_email,
+        "from_address": persona_email,
         "from_display_name": "Test Sender",
         "thread_id": thread_id,
         "in_reply_to": None,
         "signature_block": None,
-        "message_id": src_message_id,
+        "external_id": src_message_id,
         "subject": subject,
         "sent_at": now,
     }
@@ -313,7 +313,7 @@ async def test_audit_trail_is_complete_and_traceable_across_the_pipeline(monkeyp
 
     monkeypatch.setattr(reasoning, "complete", _model_must_not_be_called)
 
-    pipeline_started_at = datetime.now(timezone.utc)
+    pipeline_started_at = datetime.now(UTC)
     case_id: uuid.UUID | None = None
     try:
         case_id, thread_id = await _drive_pipeline_through_every_stage(engine, persona_email)

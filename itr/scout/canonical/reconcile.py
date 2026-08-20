@@ -17,7 +17,11 @@ docstring documents. reconcile("gmail") will raise a natural
 expected and correct — the logic here is done; it is only the
 upstream table that is missing — not a bug in this module and not
 something to work around with a try/except, fallback, or mock data.
-No src_gmail.attachment-style table exists anywhere in this codebase
+src_gmail.attachment now EXISTS (schema/003) — but itr360 still has
+no canonical attachment representation, so an attachment reconciler
+would compare source rows against a table that cannot exist yet; the
+delta would always equal source_count. Still deferred, now for the
+canonical-side reason, not the source-side one
 yet either, so 'attachment' is a TODO, not reconciled here.
 
 Must never import scout.gmail, scout.connectors, or googleapiclient
@@ -41,7 +45,7 @@ from scout.governance.audit import write as audit_write
 TENANT_ID = uuid.UUID(str(settings.tenant_id))
 
 # Object types reconciled per source_system.
-# TODO: add 'attachment' once a src_gmail.attachment-style table
+# TODO: add 'attachment' once a CANONICAL attachment table exists (the
 # exists anywhere in this codebase to reconcile against — none does
 # yet.
 _OBJECTS_BY_SOURCE: dict[str, list[str]] = {
@@ -90,10 +94,9 @@ def _checksum(pairs: list[tuple]) -> str:
 
 
 def _reconcile_message(session: Session, source_system: str) -> ObjectDelta:
-    # For source_system="gmail" this resolves to src_gmail.message, which
-    # is blocked on Rohan's Task 5 (see module docstring) — the SELECT
-    # below is expected to raise "relation does not exist" until that
-    # table lands. That is correct, documented behaviour, not a bug here.
+    # For source_system="gmail" this resolves to src_gmail.message —
+    # real since Task 5 landed (schema/003). Sampled columns confirmed
+    # against the actual DDL: external_id, internal_date_ms.
     source_table = f"src_{source_system}.message"
 
     source_count = session.execute(text(f"SELECT count(*) FROM {source_table}")).scalar_one()
@@ -109,7 +112,7 @@ def _reconcile_message(session: Session, source_system: str) -> ObjectDelta:
 
     if sample_n > 0:
         source_sample = session.execute(
-            text(f"SELECT message_id, internal_date_ms FROM {source_table} ORDER BY random() LIMIT :n"),
+            text(f"SELECT external_id, internal_date_ms FROM {source_table} ORDER BY random() LIMIT :n"),
             {"n": sample_n},
         ).all()
         source_checksum = _checksum([(row[0], row[1]) for row in source_sample])

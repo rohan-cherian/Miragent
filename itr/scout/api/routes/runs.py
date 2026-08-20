@@ -1,28 +1,31 @@
 """
 Task 24, Part B — runs routes: GET /runs, /runs/{id}, /runs/{id}/quarantine.
 
-BLOCKED ON (partially): Task 6 (Rohan). GET /runs and GET /runs/{id} read
-raw_ingest.runs, which does not exist in this workspace yet (checked — the
-raw_ingest schema holds only quarantine). Both are implemented against the
-contract's Run shape and the assumed table below, and FAIL NATURALLY with
-Postgres's UndefinedTable error until Task 6 lands — no fake rows. Same
-pattern as connections.py and reconcile.py's BLOCKED-ON note.
+Task 6 has LANDED (schema/004_raw_ingest.sql): raw_ingest.runs is real.
+Columns confirmed against the actual DDL: id, tenant_id, source_system,
+mode, started_at, finished_at, status, cursor_before, cursor_after,
+messages_seen, messages_written, messages_skipped, errors (jsonb).
+
+Two documented bridges against the FROZEN contract (schemas.py is pinned):
+* status vocabulary — the DB writes running | success | failed | partial;
+  the contract's RunStatus enum is pending | running | succeeded | failed.
+  Mapped: success -> succeeded, running -> running, failed -> failed, and
+  partial -> failed (LOSSY: a partial run completed with errors and the
+  contract has no slot for that — flagged for a contract revision; the
+  composed counts dict still carries the skip/error numbers so the
+  information is not lost). "pending" never occurs in the DB — a run row
+  is created already running; no gap in practice.
+* counts — the DB has no counts column; the contract's Run.counts
+  (dict[str,int]) is COMPOSED from messages_seen / messages_written /
+  messages_skipped plus the errors-array length.
 
 GET /runs/{id}/quarantine is NOT blocked: raw_ingest.quarantine is real
 (Task 16, schema/008), keyed by connector_run_id — this route works against
 real data today.
 
-Assumed raw_ingest.runs contract (to be reconciled when Task 6 lands):
-    raw_ingest.runs (
-        id uuid, source_system text,
-        status text,              -- pending | running | succeeded | failed
-        started_at timestamptz, finished_at timestamptz,
-        counts jsonb              -- {"messages": 9, "attachments": 1, ...}
-    )
-
-GET /runs/{id}/stream (SSE) is deliberately deferred to a later Task 24
-part: it needs the run_stage_event table (Task 6) AND server-sent-events
-plumbing, neither of which exists yet.
+GET /runs/{id}/stream (SSE) remains deferred: raw_ingest.run_stage_event
+now exists (schema/004), but the SSE plumbing does not — half the blocker
+cleared, the route still needs its own build.
 
 Layering (Task 4): imports nothing from scout.gmail, scout.connectors,
 or googleapiclient.
@@ -43,29 +46,57 @@ from scout.canonical.models import Quarantine
 
 router = APIRouter()
 
-_LIST_SQL = """
-    SELECT id, source_system, status, started_at, finished_at, counts
+_COLUMNS = (
+    "id, source_system, status, started_at, finished_at, "
+    "messages_seen, messages_written, messages_skipped, errors"
+)
+
+_LIST_SQL = f"""
+    SELECT {_COLUMNS}
     FROM raw_ingest.runs
     WHERE (:source_system IS NULL OR source_system = :source_system)
       AND (:status IS NULL OR status = :status)
     ORDER BY started_at DESC
 """
 
-_GET_SQL = """
-    SELECT id, source_system, status, started_at, finished_at, counts
+_GET_SQL = f"""
+    SELECT {_COLUMNS}
     FROM raw_ingest.runs
     WHERE id = :id
 """
 
+# DB status -> contract RunStatus (see module docstring; partial is lossy).
+_DB_TO_CONTRACT_STATUS = {
+    "running": "running",
+    "success": "succeeded",
+    "failed": "failed",
+    "partial": "failed",
+}
+# Contract filter value -> DB value(s) for the ?status= query param.
+_CONTRACT_TO_DB_STATUS = {
+    "running": "running",
+    "succeeded": "success",
+    "failed": "failed",  # NOTE: matches DB 'failed' only; 'partial' rows are
+    #        reported as failed in responses but filterable only via their
+    #        own DB value — acceptable until the contract grows 'partial'.
+    "pending": "__never__",  # no DB equivalent; matches nothing, honestly
+}
+
 
 def _to_run(row: Any) -> Run:
+    errors = row["errors"] or []
     return Run(
         id=row["id"],
         source_system=row["source_system"],
-        status=row["status"],
+        status=_DB_TO_CONTRACT_STATUS.get(row["status"], "failed"),
         started_at=row["started_at"],
         finished_at=row["finished_at"],
-        counts=row["counts"],
+        counts={
+            "messages_seen": row["messages_seen"],
+            "messages_written": row["messages_written"],
+            "messages_skipped": row["messages_skipped"],
+            "errors": len(errors),
+        },
     )
 
 
@@ -75,8 +106,9 @@ def list_runs(
     status: str | None = None,  # contract query param
     session: Session = Depends(get_db_session),
 ) -> Any:
+    db_status = _CONTRACT_TO_DB_STATUS.get(status, status) if status else None
     rows = session.execute(
-        text(_LIST_SQL), {"source_system": source_system, "status": status}
+        text(_LIST_SQL), {"source_system": source_system, "status": db_status}
     ).mappings().all()
     return [_to_run(row) for row in rows]
 

@@ -17,6 +17,9 @@ or googleapiclient.
 
 from __future__ import annotations
 
+import json
+import logging
+import time
 import uuid
 
 from fastapi import FastAPI, Request
@@ -25,6 +28,41 @@ from fastapi.responses import JSONResponse
 
 from scout.api.routes import router as api_router
 from scout.canonical.decisions import ValidationError, VersionConflictError
+
+# ── Structured JSON logging, keyed by trace id (Task 24) ──────────────────
+# One JSON object per line so the logs are greppable by trace_id and
+# ingestible without a parser. The trace id is the join key between a
+# console request, its API log lines and decision_audit.trace_id.
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for key in ("trace_id", "method", "path", "status", "duration_ms"):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
+        if record.exc_info:
+            payload["exc"] = self.formatException(record.exc_info)
+        return json.dumps(payload, default=str)
+
+
+def _configure_json_logging() -> logging.Logger:
+    handler = logging.StreamHandler()
+    handler.setFormatter(_JsonFormatter())
+    api_logger = logging.getLogger("scout.api")
+    api_logger.handlers = [handler]
+    api_logger.setLevel(logging.INFO)
+    api_logger.propagate = False
+    return api_logger
+
+
+log = _configure_json_logging()
+
 
 app = FastAPI(
     title="ITR Scout Console API",  # contract info.title, verbatim
@@ -59,8 +97,19 @@ async def trace_id_middleware(request: Request, call_next):
     """
     trace_id = request.headers.get("X-Trace-Id") or str(uuid.uuid4())
     request.state.trace_id = trace_id
+    started = time.perf_counter()
     response = await call_next(request)
     response.headers["X-Trace-Id"] = trace_id
+    log.info(
+        "request",
+        extra={
+            "trace_id": trace_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status": response.status_code,
+            "duration_ms": round((time.perf_counter() - started) * 1000, 1),
+        },
+    )
     return response
 
 

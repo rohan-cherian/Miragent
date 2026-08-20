@@ -21,6 +21,7 @@ complete duplicate check — no tracking table is needed for correctness.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import date, datetime, timezone
 
@@ -132,7 +133,18 @@ def build_attachment_key(
     real path to point at.
     """
     safe_message = safe_message_id(message_id)
-    safe_attachment = _UNSAFE_ID.sub("-", (attachment_id or "").strip()) or "unknown"
+    # Gmail attachment ids are ~450-character opaque blobs. Used verbatim they
+    # produce object names MinIO rejects outright (XMinioInvalidObjectName),
+    # so the doc's "{attachmentId}_{filename}" cannot be taken literally.
+    # A short digest keeps the key derivable — same attachment, same key —
+    # which is what the HEAD-based duplicate check relies on.
+    raw_id = (attachment_id or "").strip()
+    if not raw_id:
+        safe_attachment = "unknown"
+    elif len(raw_id) <= 40 and not _UNSAFE_ID.search(raw_id):
+        safe_attachment = raw_id
+    else:
+        safe_attachment = hashlib.sha256(raw_id.encode("utf-8")).hexdigest()[:16]
     # The filename is user-controlled, so it is sanitised rather than validated:
     # an attachment must never be dropped just because it was named oddly.
     safe_name = _UNSAFE.sub("-", (filename or "").strip().lower()).strip("-")

@@ -107,18 +107,23 @@ def _fetch_unprocessed_rows(engine, thread_id_filter: str | None) -> list[dict]:
     can never be ingested twice.
     """
     query = """
-        SELECT src.*
+        -- thread_id overridden deliberately: Task 5 makes
+        -- src_gmail.message.thread_id a uuid FK to src_gmail.thread, while
+        -- Task 15's threading keys on the GMAIL thread id, which lives in
+        -- src_gmail.thread.external_id. Expose that under the expected name.
+        SELECT src.*, thr.external_id AS thread_id
         FROM src_gmail.message AS src
+        JOIN src_gmail.thread AS thr ON thr.id = src.thread_id
         WHERE NOT EXISTS (
             SELECT 1 FROM itr360.message AS m
             WHERE m.source_system = :source_system
-              AND m.external_id = src.message_id::text
+              AND m.external_id = src.external_id::text
         )
     """
     params: dict = {"source_system": SOURCE_SYSTEM}
 
     if thread_id_filter is not None:
-        query += " AND src.thread_id = :thread_id"
+        query += " AND thr.external_id = :thread_id"
         params["thread_id"] = thread_id_filter
 
     with engine.connect() as conn:
@@ -175,7 +180,7 @@ def run(case_id: str | None, dry_run: bool) -> int:
 
     with Session(engine) as session:
         for row in rows:
-            src_message_id = row.get("message_id")
+            src_message_id = row.get("external_id")  # Task 5 column name
 
             try:
                 print(f"{LOG_PREFIX} redact+normalise message_id={src_message_id}")

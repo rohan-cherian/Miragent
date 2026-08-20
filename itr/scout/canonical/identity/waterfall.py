@@ -90,10 +90,26 @@ class Match:
     evidence: list[dict] = field(default_factory=list)
 
 
+# Task 5 named these columns differently from the shape this module was
+# written against. Resolve by alias rather than renaming a live column or
+# making every caller reshape its rows.
+_ALIASES: dict[str, tuple[str, ...]] = {
+    "from_email": ("from_address",),
+    "message_id": ("external_id",),
+}
+
+
 def _field(src_message, name: str):
-    if isinstance(src_message, Mapping):
-        return src_message.get(name)
-    return getattr(src_message, name, None)
+    names = (name, *_ALIASES.get(name, ()))
+    for candidate in names:
+        value = (
+            src_message.get(candidate)
+            if isinstance(src_message, Mapping)
+            else getattr(src_message, candidate, None)
+        )
+        if value is not None:
+            return value
+    return None
 
 
 def _band_for(confidence: float) -> str:

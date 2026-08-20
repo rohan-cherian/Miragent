@@ -44,25 +44,53 @@ from scout.canonical.models import Quarantine
 router = APIRouter()
 
 _LIST_SQL = """
-    SELECT id, source_system, status, started_at, finished_at, counts
+    SELECT id, source_system, status, started_at, finished_at,
+               jsonb_build_object(
+                   'messages', messages_seen,
+                   'written', messages_written,
+                   'skipped', messages_skipped,
+                   'attachments', 0
+               ) AS counts
     FROM raw_ingest.runs
-    WHERE (:source_system IS NULL OR source_system = :source_system)
-      AND (:status IS NULL OR status = :status)
+    -- Casts required: an untyped NULL bind leaves Postgres unable to infer
+    -- the parameter type (AmbiguousParameter).
+    WHERE (CAST(:source_system AS text) IS NULL OR source_system = :source_system)
+      AND (CAST(:status AS text) IS NULL OR status = :status)
     ORDER BY started_at DESC
 """
 
 _GET_SQL = """
-    SELECT id, source_system, status, started_at, finished_at, counts
+    SELECT id, source_system, status, started_at, finished_at,
+               jsonb_build_object(
+                   'messages', messages_seen,
+                   'written', messages_written,
+                   'skipped', messages_skipped,
+                   'attachments', 0
+               ) AS counts
     FROM raw_ingest.runs
     WHERE id = :id
 """
+
+
+# Task 6's DDL and Task 2's contract disagree on this vocabulary:
+#   storage  (raw_ingest.runs.status): running | success | failed | partial
+#   contract (Run.status)            : pending | running | succeeded | failed
+# The contract is frozen and the console renders on it, so translate here
+# rather than changing either side. 'partial' has no contract variant — it
+# is reported as failed because a partial run did not complete, and
+# flattering it to 'succeeded' would hide a real outcome. Worth an
+# amendment to Task 2 so partial can be shown honestly.
+_STATUS_TO_CONTRACT = {
+    "success": "succeeded",
+    "partial": "failed",
+}
 
 
 def _to_run(row: Any) -> Run:
     return Run(
         id=row["id"],
         source_system=row["source_system"],
-        status=row["status"],
+        status=_STATUS_TO_CONTRACT.get(row["status"], row["status"]),
         started_at=row["started_at"],
         finished_at=row["finished_at"],
         counts=row["counts"],

@@ -140,3 +140,10 @@ router.include_router(_execution.router)
 from scout.api.routes import inbox_and_queue as _inbox_and_queue  # noqa: E402
 
 router.include_router(_inbox_and_queue.router)
+
+# ── Task 24, Part E — stores metrics + the runs SSE stream. ────────────────
+from scout.api.routes import runs_stream as _runs_stream  # noqa: E402
+from scout.api.routes import stores as _stores  # noqa: E402
+
+router.include_router(_stores.router)
+router.include_router(_runs_stream.router)

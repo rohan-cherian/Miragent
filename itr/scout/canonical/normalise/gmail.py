@@ -39,7 +39,7 @@ SOURCE_SYSTEM = "gmail"
 # every direct field correspondence lives here, never as inline
 # if/elif comparisons in normalise_message() below.
 FIELD_MAP: dict[str, str] = {
-    "src_message_id": "message_id",  # pointer back into src_gmail.message
+    "src_message_id": "external_id",  # pointer back into src_gmail.message
     "subject": "subject",
     "thread_id": "thread_id",  # Task 15's threading.find_case_by_thread_id relies on this
 }
@@ -79,7 +79,7 @@ def normalise_message(src_row: Mapping[str, Any]) -> dict[str, Any]:
     sent_at = datetime.fromtimestamp(internal_date_ms / 1000, tz=UTC)
 
     now = datetime.now(UTC)
-    source_message_id = src_row["message_id"]
+    source_message_id = src_row["external_id"]
 
     canonical: dict[str, Any] = {
         field: src_row[source_field] for field, source_field in FIELD_MAP.items()

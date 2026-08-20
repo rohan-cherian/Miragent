@@ -5,11 +5,19 @@ Gate one was Task 12's redaction. This is gate two: the pack is
 ACL-filtered before it exists, not before it is displayed — a hard
 gate, not a display-time convenience.
 
-Fails closed to empty: on ANY internal error (malformed payload,
-missing acl_tags key, exception anywhere in the ACL check), this
-returns [] — never the unfiltered input. An empty pack is a safe,
-valid state (the caller gets low_context=True); leaking one
-unfiltered chunk is not.
+Fails closed to empty: on ANY internal error in the FILTERING logic
+(malformed payload, missing acl_tags key, exception anywhere in the
+ACL check), this returns [] — never the unfiltered input. An empty
+pack is a safe, valid state (the caller gets low_context=True);
+leaking one unfiltered chunk is not.
+
+The audit write is a SEPARATE failure domain. It happens after the
+filtering result already exists, in its own guarded block: an
+audit-logging failure (a transient decision_audit hiccup) is logged
+as a warning and never changes what this function returns. A logging
+failure and a governance failure are two different things — coupling
+them meant a flaky audit table silently degraded every context pack
+to low_context with no data-safety reason.
 
 Must never import scout.gmail, scout.connectors, or googleapiclient
 (tests/test_layering.py, Task 4).
@@ -17,10 +25,13 @@ Must never import scout.gmail, scout.connectors, or googleapiclient
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from scout.config import settings
 from scout.governance import audit
+
+logger = logging.getLogger(__name__)
 
 
 def _acl_allows(chunk_acl_tags: list[str], caller_acl_tags: list[str]) -> bool:
@@ -69,7 +80,9 @@ def trust_filter(retrieved_chunks: list[dict], acl_tags: list[str]) -> list[dict
     """
     input_count = len(retrieved_chunks)
     restricted_count = 0
+    failed = False
 
+    # ── Failure domain 1: the governance check itself. Fails closed. ──────
     try:
         output: list[dict] = []
 
@@ -97,23 +110,39 @@ def trust_filter(retrieved_chunks: list[dict], acl_tags: list[str]) -> list[dict
                 marked["payload"] = marked_payload
                 output.append(marked)
 
-        output_count = len(output)
+    except Exception:
+        # Task 18 spec: "it must log and return an empty list".
+        logger.exception(
+            "trust_filter: filtering failed — failing closed to an empty "
+            "list (%d hit(s) suppressed).", input_count,
+        )
+        output = []
+        restricted_count = 0
+        failed = True
 
+    # ── Failure domain 2: the audit row. Never changes the return value. ──
+    outputs: dict[str, Any] = {
+        "input_count": input_count,
+        "output_count": len(output),
+        "restricted_count": restricted_count,
+    }
+    if failed:
+        outputs["failed_closed"] = True
+    try:
         audit.write(
             actor="scout.context.trust",
             action="trust_filter",
             category="system",
-            outputs={
-                "input_count": input_count,
-                "output_count": output_count,
-                "restricted_count": restricted_count,
-            },
+            outputs=outputs,
+        )
+    except Exception as exc:  # noqa: BLE001 — logging failure must not cascade
+        logger.warning(
+            "trust_filter: audit row could not be written (%s: %s) — "
+            "returning the computed filtering result regardless.",
+            type(exc).__name__, exc,
         )
 
-        return output
-
-    except Exception:
-        return []
+    return output
 
 
 __all__ = ["trust_filter"]

@@ -462,24 +462,50 @@ def upsert_chunks(embedded_chunks: list[EmbeddedChunk]) -> None:
     client.upsert(collection_name=settings.qdrant_collection_name, points=points)
 
 
-def _build_acl_filter(acl_filter: dict[str, Any] | None) -> models.Filter | None:
-    """Build a Qdrant payload filter from a simple {field: value(s)} dict.
+_SHOULD_KEY = "$should"
 
-    A list value matches any of its members (MatchAny); a scalar value
-    matches exactly (MatchValue). Task 18 owns any richer trust logic —
-    this is a thin, direct translation, nothing more.
-    """
-    if not acl_filter:
-        return None
 
-    conditions = []
-    for key, value in acl_filter.items():
+def _field_conditions(fields: dict[str, Any]) -> list[models.FieldCondition]:
+    """{field: value_or_list} -> FieldConditions. List -> MatchAny, scalar -> MatchValue."""
+    conditions: list[models.FieldCondition] = []
+    for key, value in fields.items():
         if isinstance(value, (list, tuple, set)):
             conditions.append(models.FieldCondition(key=key, match=models.MatchAny(any=list(value))))
         else:
             conditions.append(models.FieldCondition(key=key, match=models.MatchValue(value=value)))
+    return conditions
 
-    return models.Filter(must=conditions)
+
+def _build_acl_filter(acl_filter: dict[str, Any] | None) -> models.Filter | None:
+    """Build a Qdrant payload filter from a simple {field: value(s)} dict.
+
+    A list value matches any of its members (MatchAny); a scalar value
+    matches exactly (MatchValue). All top-level keys are ANDed (``must``).
+
+    One extension, for the KB pipeline: the reserved key ``"$should"`` may
+    carry a list of {field: value(s)} dicts. Each dict becomes one
+    ``must`` group, and the groups are ORed together under Qdrant's
+    ``should`` — i.e. ``(A) OR (B)``, ANDed with the top-level ``must``.
+    retrieve.py uses this to express "this case's chunks OR any
+    tenant-wide KB article". Task 18 owns any richer trust logic — this
+    is still a direct translation, nothing more.
+    """
+    if not acl_filter:
+        return None
+
+    plain = {k: v for k, v in acl_filter.items() if k != _SHOULD_KEY}
+    should_groups = acl_filter.get(_SHOULD_KEY) or []
+
+    must = _field_conditions(plain)
+    should = [
+        models.Filter(must=_field_conditions(group))
+        for group in should_groups
+        if group
+    ]
+
+    if not must and not should:
+        return None
+    return models.Filter(must=must or None, should=should or None)
 
 
 def search(

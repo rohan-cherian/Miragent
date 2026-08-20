@@ -40,6 +40,7 @@ SOURCE_SYSTEM = "gmail"
 FIELD_MAP: dict[str, str] = {
     "src_message_id": "message_id",  # pointer back into src_gmail.message
     "subject": "subject",
+    "thread_id": "thread_id",  # Task 15's threading.find_case_by_thread_id relies on this
 }
 
 # Canonical columns NOT covered by FIELD_MAP, and why:

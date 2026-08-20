@@ -7,6 +7,16 @@ Usage:
 Exits non-zero if the reconciliation did not pass — anything less
 than 100% completeness (or a checksum mismatch) is a FAILURE, not a
 warning.
+
+BLOCKED ON: reconcile("gmail") queries src_gmail.message, which does
+not exist yet in this workspace until Rohan's Task 5 (Gmail connector
+"re-grain") lands — see scout/canonical/reconcile.py's module
+docstring. Running this command before then will fail with a natural
+"relation does not exist" error. That is expected and correct (same
+pattern as scripts/ingest_canonical.py's original --dry-run behaviour
+before it was wired) — the reconciliation logic itself is done; only
+this upstream data dependency is missing. Do not add a workaround
+here to make the command "succeed" without it.
 """
 
 from __future__ import annotations

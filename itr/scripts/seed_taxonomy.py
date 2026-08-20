@@ -141,6 +141,52 @@ FALLBACK_TAXONOMY = [
         ["what's your SLA", "what's your support policy", "how does support work"],
         "low",
     ),
+    # ── security/alerts ───────────────────────────────────────────────────
+    # USER-REPORTED security concerns: a person writing in because they saw
+    # an alert, noticed odd activity, or received a suspicious email and
+    # want it looked at. These are genuine support tickets.
+    #
+    # This category is NOT a classification target for E9 (the automated
+    # Google "new device sign-in" security notification in the test corpus).
+    # E9 is a system notification, not a support request, and must be
+    # DROPPED upstream by Task 8's filters.py (Rohan) and logged in
+    # raw_ingest.runs.errors — that is exit criterion 12, and nothing here
+    # closes it. Letting E9 reach triage and land in this category would be
+    # the exact failure the Task 8 rationale warns about ("every Google
+    # security alert becomes a case").
+    (
+        "security/alerts",
+        "new_device_signin",
+        "Security alert for sign-in from a new or unrecognized device/location",
+        [
+            "I just got a new device sign-in alert I don't recognize",
+            "there's an alert about a sign-in from a location I've never been to",
+            "got a notification that someone signed in from a new device, was that you",
+        ],
+        "high",
+    ),
+    (
+        "security/alerts",
+        "suspicious_account_activity",
+        "Unusual or suspicious activity detected on the account",
+        [
+            "there's activity on my account I didn't do",
+            "I'm seeing logins and changes I don't recognise",
+            "I think someone else is using my account",
+        ],
+        "high",
+    ),
+    (
+        "security/alerts",
+        "phishing_email_report",
+        "User reporting a suspected phishing or spoofed email",
+        [
+            "I got an email that looks like it's from you but the link is weird",
+            "is this email from support real or phishing",
+            "reporting a suspicious email pretending to be your billing team",
+        ],
+        "medium",
+    ),
 ]
 
 
@@ -257,7 +303,8 @@ def main() -> int:
             f"{len(categories)} categories) -"
         )
         print("NOT the full 10-category / 100-problem-class taxonomy. This is enough")
-        print("to unblock the E1-E9 test email corpus and nothing more. Load the real")
+        print("to unblock the E1-E8 test email corpus and nothing more (E9, the Google")
+        print("security alert, is dropped upstream by Task 8 and never triaged). Load the real")
         print(f"workbook ({WORKBOOK_NAME}) and re-run this script once it's available.")
         print(banner)
 

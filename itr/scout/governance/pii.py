@@ -159,3 +159,60 @@ def redact(text: str) -> RedactionResult:
         raise
     except Exception as exc:
         raise RedactionError(f"PII redaction failed: {exc}") from exc
+
+
+def redact_and_audit(text: str, source: str, case_id=None) -> RedactionResult:
+    """redact(), plus one itr360.decision_audit row — closing the audit gap
+    where governance gate one was invisible to the audit trail.
+
+    Purely additive: calls the existing redact() unchanged, then records the
+    outcome. Callers that don't need audit visibility keep calling redact()
+    directly; nothing about redact()'s behaviour, signature or fail-closed
+    guarantee changes.
+
+    case_id is EXPECTED to be None at most call sites: redaction runs on the
+    way into canonical, BEFORE case correlation exists, so there is no case
+    to attribute yet. That is the same accepted pattern identity-resolution
+    audit rows already have — the row stays discoverable by source and
+    timestamp, and the later case_retrolinked event (identity/queue.py)
+    bridges the case's own timeline back to this period.
+
+    On RedactionError: a redact_failed audit row is attempted BEFORE the
+    original exception is re-raised unchanged. The audit attempt is wrapped
+    in its own guard (the trust.py pattern) — an audit-backend failure can
+    only produce a warning, never swallow or replace the RedactionError,
+    and never stop it propagating.
+    """
+    import logging
+
+    from scout.governance import audit
+
+    logger = logging.getLogger(__name__)
+
+    def _write_row(action: str, outputs: dict) -> None:
+        try:
+            audit.write(
+                actor="system",
+                action=action,
+                category="redaction",
+                case_id=case_id,
+                outputs=outputs,
+            )
+        except Exception as exc:  # noqa: BLE001 — logging failure must not cascade
+            logger.warning(
+                "redact_and_audit: audit row (%s) could not be written for "
+                "source=%s (%s: %s) — redaction outcome unaffected.",
+                action, source, type(exc).__name__, exc,
+            )
+
+    try:
+        result = redact(text)
+    except RedactionError as exc:
+        _write_row("redact_failed", {"source": source, "error": str(exc)})
+        raise  # the ORIGINAL RedactionError, unchanged
+
+    _write_row(
+        "redact",
+        {"source": source, "status": result.status, "pii_count": len(result.pii_map)},
+    )
+    return result

@@ -25,11 +25,12 @@ not this module.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Mapping
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from typing import Any
 
 from scout.config import settings
-from scout.governance.pii import redact
+from scout.governance.pii import redact_and_audit
 
 SOURCE_SYSTEM = "gmail"
 
@@ -69,12 +70,15 @@ def normalise_message(src_row: Mapping[str, Any]) -> dict[str, Any]:
     naturally as a KeyError for the caller to handle per-record.
     """
     body_text = src_row.get("body_text") or ""
-    redaction = redact(body_text)  # never reimplement redaction logic here
+    # The audited redaction path (gate one now leaves an audit row).
+    # case_id=None is correct here: redaction structurally precedes case
+    # correlation — see redact_and_audit()'s docstring.
+    redaction = redact_and_audit(body_text, source="gmail_normalise", case_id=None)
 
     internal_date_ms = src_row["internal_date_ms"]
-    sent_at = datetime.fromtimestamp(internal_date_ms / 1000, tz=timezone.utc)
+    sent_at = datetime.fromtimestamp(internal_date_ms / 1000, tz=UTC)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     source_message_id = src_row["message_id"]
 
     canonical: dict[str, Any] = {

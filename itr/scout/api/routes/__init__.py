@@ -130,3 +130,13 @@ from scout.api.routes import triage as _triage  # noqa: E402
 router.include_router(_context.router)
 router.include_router(_triage.router)
 router.include_router(_audit.router)
+
+# ── Task 24, Part E — recommendation / write-execution router, same pattern. ─
+from scout.api.routes import execution as _execution  # noqa: E402
+
+router.include_router(_execution.router)
+
+# ── Task 24, Part F — inbox / queue router, same append-only pattern. ──────
+from scout.api.routes import inbox_and_queue as _inbox_and_queue  # noqa: E402
+
+router.include_router(_inbox_and_queue.router)

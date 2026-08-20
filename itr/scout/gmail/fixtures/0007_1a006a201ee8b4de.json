@@ -1,0 +1,164 @@
+{
+  "id": "1a006a201ee8b4de",
+  "threadId": "1a006a201ee8b4de",
+  "historyId": "70",
+  "originalHistoryId": "2752",
+  "internalDate": "1786817663000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "the printer near the 3rd floor kitchen isnt printing. jobs go into the queue and just sit there. ive restarted it twice and it doesnt help. its the big HP one not the small one. can someone have a look",
+  "sizeEstimate": 7760,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:ad4:4e22:0:b0:8f0:da16:84a1 with SMTP id dm2csp1073985qvb;        Sat, 15 Aug 2026 11:14:35 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:600c:3788:b0:493:e365:7630 with SMTP id 5b1f17b1804b1-4998798b5afmr148678885e9.14.1786817675506;        Sat, 15 Aug 2026 11:14:35 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786817675; cv=pass;        d=google.com; s=arc-20260327;        b=Fg+6vUEJOtiv9c30eIboOkpZKyQOQ4zo+SZiJ+cJ8IUVpgSF6Y52kJfj0ApZ7kFeXG         PsG0/aTLMzyPGg5OcVBZGR1DV7Ym2+CzaA0OZgF8awL19BxMWLUKCM8USDkNraS50pjB         /KZCy1qsafqvEallzrzJaTzQFKEx7xO44gsK/TszSNBr0EqfHmeFS/R+uSKS0G5DgwiN         U00wR9+42NGmyO2r47EMi93/5iqA3uk3UyZkmbq0uSnBDZeFO+/l/w/g4YdIMBLHwKL0         nxwe9f+0bdPpRaf3bTjlIkvRzPzQRMO1dI9OVsm9JVzyZ0BFoqFM+VxdzYv538AcaqDv         6FSg=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=dRGlPt6MCMRpBhro+lyOuIwYR1GdbXQIy06Xn4aEFow=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=LNxDlv/DC+RKMcyVAcn+8qewJ0cllEWNHhQuB7JmqLuyPEY0OrtNRla6M+2vw2UMk1         FR8p/vwnZi4WCu1fxAsnL+yNPK6EE+SZorfkY1XEJWlLCZigxryw1el6+bjT9HaFXaDp         8eqVlmSf9INIsR5HeLFwXSxdo2LdBPJ0hN0m8aii4JOnp7A4TmYuqpGRs92KReE5g44v         tSVg2XM0v8z+4mQHD//3bANkgV7y6Ui7IlpNNheDZnGJdtH6g5a2nhK1ow9ZU3Z46x8J         D6bRcgiKp+Ts+h8lq1TqdJ641mv2Oka3XaUQEJXDw5wgqjG9+ggS1m0Ko8UY7ikznwV7         5yCg==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=JYKZZGf5;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id 5b1f17b1804b1-4998b0f4e83sor7173455e9.10.2026.08.15.11.14.35        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Sat, 15 Aug 2026 11:14:35 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=JYKZZGf5;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.ojasvi@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=motiveminds.ojasvi@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786817675; cv=none;        d=google.com; s=arc-20260327;        b=U56yESaXxmaO7kiFxCP2d8hJyo0VMLKmG09a5NhZNq5R5It8mzFbEYRLZcRNMzTmqN         pDKjUudaHn4hQNXJ2bo37BbrqTlbwgmWNk7xeTtBFEX14DkcwZuRe/pUCSFF9BUPzk/G         jYB35OkXpTa0dc0sYld0hILoHmZNIVrJ5mhFb0h9cvaZmF5CNU66iFCzWcgAgjP1oDNt         kKwYXnazotsxmwX+tg5M/b0UIR0XuqwNhnPc+KOltUrniWB6eeKte+NnZqTkWzSiGgN7         9l2ylOXnzA++zcjASYRMpeFrJ6jYP6tYQbGf/V9J6U11173jNYe6wjmdo97x8wd61Rrx         w96w=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=dRGlPt6MCMRpBhro+lyOuIwYR1GdbXQIy06Xn4aEFow=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=pCMEZkrhzd0Wd/4ZDxR9IEszb3ULzvX9wr6etTUBYIKN8UX9ivkYzFoRIuMcGjhXvA         Ob4gNlc6MFIb2sObVyWXmzTUk5UkJWWnVk2zskzY0nawwhr7XCLDt5bpaRc6vBjVy1hS         8X2dRjuM/ag5oXNKeDW+sSplFfKbjkuF+qqBUhVwHVXkOWu9beQBgmeAFyXLUE2ejOqk         Mcp7alAPNKAh2Eql52J04iQlPTwIcYHtcVwCSebqr3fRvEloNFVzIQYacv+AfRXvzA7O         qLB6gx6cBOgOnIKZjQRdwl/bWSGDTqdsBmogMJRumpEGjIXvZxGfUuxUsxEaUammYGI/         zYig==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786817675; x=1787422475; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=dRGlPt6MCMRpBhro+lyOuIwYR1GdbXQIy06Xn4aEFow=;        b=JYKZZGf5rwAV4ZqqE5d3cJufpPIQVeMrfvtD9sGWipOSk8g2FoAZjZqncXqwb3r42j         S+yr6o8OYH2vDDa+r0GQ8Z4vdUcGCB6QHTcDBBl61kz3+htMDVtCvGdHF24hmByeBY/V         S1H21bkps4ovw85IaHn2lDtxQ58HQO1RECfy8Ik9u4SFxrEGgUpCvjyjFG/yBaucDimE         ga3JM4vC7xoRpIseGnKU/Lq0YIDMjFtCeM6LKi1A9U7UUWiHY5TLTk217XDh86pJj7T1         WjtiHAda18829C1yX3+v8nuRuDxpw2reC6h47/fTQynYifscZOuNfQI+z5U5roksx56O         bonA=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786817675; x=1787422475;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=dRGlPt6MCMRpBhro+lyOuIwYR1GdbXQIy06Xn4aEFow=;        b=k6Mgb6QHBAszFhrbq0iDPEYfxzn2wZiVzjm9UOzstCXo0Zxjql67K/Lm22OI7mmUrf         voXrYeTYeIkU71bOVjjeOJ849nE5bPQBu5+PH0YjLj0mireLcPtsNHDjuN3W5Yird1V4         NplRd3pswG+zSGye8xxckRgaq8PVFdqQgx7PGL8WD2bDGe3U8hX7DjFReBJtybX4Zo+R         tG1hrJkxQamGSRvi0YLeBkFo8uI1JbRKhCAo03AEqIq9s6RuVhcrOzxWShDvgqean855         vIZCMxC8vJk6tUIwUrCs9H0I94Ux5yA5LBw1nieYUDjTCpAilwSwrL+ktew60zUu+oxp         PhRw=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YzAIucLgmzsrmdF6ghNqlBBT2wGwH7FgVk4QSMGpD0XUYfBM0lX fsJiedzBODW85zST1ACAIlq2Ms/63tcMkCPjAcBD3xqvq/4kT4Wh9yEcyXsOz2SbZXD5xsOja+r jvl7NxIGHgeIvlfGTjOTMB68qyPsV5Y47ONDPeFlYZ6A="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD10lhcLcU8LqH87zC5ZCAz0fAzYeSTSxPvk+jleGrTrYIkMj8lWLk62t3P9PXop KMFTDAa3ySu5wfNpq7OwN4oJq2070pwa0SzO1FcewGpkiZPuhK9ZM6q4gXvzlQmga78BJvVIK0D c0QBJSXCjimlckTcOIlkdRjJhuPnUgz52tGc1mF8duDFRTR/4Ei/IXJmueaQEbPoKrMGVgmRyaV 93sGy4ldC8hOxT4sH16+Py6x6hLMy8MbCLrkYj+2sxdL6lnmX54shClhTaItzcriBE260poaqBS uPGWYUS0997t37Emabgctc1nrQCjgzuWRrljtXUl4/oa"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:600c:c163:b0:499:8174:9f39 with SMTP id 5b1f17b1804b1-499878e02cdmr267028405e9.0.1786817674975; Sat, 15 Aug 2026 11:14:34 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "motiveminds ojasvi <motiveminds.ojasvi@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Sat, 15 Aug 2026 23:44:23 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AcwNN1UvgfFyF-CohxxrrLS6nhE1mc7yxxBLNatQDlriTh_DSWksFeVy4FMz4sc"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMH2=CMwA7tdC6MOLZfAsKJN4r4+Bi9S5-pO1e5Ex_A9-PQhyQ@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "printer on 3rd floor has stopped working suddenly"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"000000000000cb9c38065919e8f2\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 225,
+          "data": "dGhlIHByaW50ZXIgbmVhciB0aGUgM3JkIGZsb29yIGtpdGNoZW4gaXNudCBwcmludGluZy4gam9icyBnbyBpbnRvIHRoZQ0KcXVldWUgYW5kIGp1c3Qgc2l0IHRoZXJlLiBpdmUgcmVzdGFydGVkIGl0IHR3aWNlIGFuZCBpdCBkb2VzbnQgaGVscC4gaXRzDQp0aGUgYmlnIEhQIG9uZSBub3QgdGhlIHNtYWxsIG9uZS4gY2FuIHNvbWVvbmUgaGF2ZSBhIGxvb2sgcGxlYXNlDQoNCk9qYXN2aSBnb2Rh"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          },
+          {
+            "name": "Content-Transfer-Encoding",
+            "value": "quoted-printable"
+          }
+        ],
+        "body": {
+          "size": 372,
+          "data": "PGRpdiBkaXI9Imx0ciI-dGhlIHByaW50ZXIgbmVhciB0aGUgM3JkIGZsb29yIGtpdGNoZW4gaXNudCBwcmludGluZy4gam9icyBnbyBpbnRvIHRoZSBxdWV1ZSBhbmQNCmp1c3Qgc2l0IHRoZXJlLiBpdmUgcmVzdGFydGVkIGl0IHR3aWNlIGFuZCBpdCBkb2VzbnQgaGVscC4gaXRzIHRoZSBiaWcgSFAgb25lIG5vdA0KdGhlIHNtYWxsIG9uZS4NCg0KY2FuIHNvbWVvbmUgaGF2ZSBhIGxvb2sgcGxlYXNlwqA8ZGl2PjxzcGFuIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOnRyYW5zcGFyZW50Ij48YnI-PC9zcGFuPjwvZGl2PjxkaXY-PHNwYW4gc3R5bGU9ImJhY2tncm91bmQtY29sb3I6dHJhbnNwYXJlbnQiPk9qYXN2aSBnb2RhPC9zcGFuPjwvZGl2PjwvZGl2Pg"
+        }
+      }
+    ]
+  }
+}

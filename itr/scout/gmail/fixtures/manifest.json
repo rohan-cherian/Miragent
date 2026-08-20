@@ -1,0 +1,211 @@
+{
+  "account_id": "motiveminds.itsupport@gmail.com",
+  "source_prefix": "gmail",
+  "message_count": 18,
+  "message_order": [
+    "19fffb7a8c00bf8c",
+    "19fffd7b5c1f2564",
+    "19fffe6693781cab",
+    "19ffff25c24f10d1",
+    "1a0069bb243fcd6f",
+    "1a0069f5c0a9301c",
+    "1a006a201ee8b4de",
+    "1a009478c91f859f",
+    "1a009497d431273d",
+    "1a0094a9aec05a41",
+    "1a00dc47841d8435",
+    "1a00dde82a24049d",
+    "1a00de1b562fc367",
+    "1a00de43c2b02073",
+    "1a00ed023a5fe85e",
+    "1a0132f0f9801cb2",
+    "1a0150c6f7e33c2a",
+    "1a0182548e42e65c"
+  ],
+  "files": {
+    "19fffb7a8c00bf8c": "0001_19fffb7a8c00bf8c.json",
+    "19fffd7b5c1f2564": "0002_19fffd7b5c1f2564.json",
+    "19fffe6693781cab": "0003_19fffe6693781cab.json",
+    "19ffff25c24f10d1": "0004_19ffff25c24f10d1.json",
+    "1a0069bb243fcd6f": "0005_1a0069bb243fcd6f.json",
+    "1a0069f5c0a9301c": "0006_1a0069f5c0a9301c.json",
+    "1a006a201ee8b4de": "0007_1a006a201ee8b4de.json",
+    "1a009478c91f859f": "0008_1a009478c91f859f.json",
+    "1a009497d431273d": "0009_1a009497d431273d.json",
+    "1a0094a9aec05a41": "0010_1a0094a9aec05a41.json",
+    "1a00dc47841d8435": "0011_1a00dc47841d8435.json",
+    "1a00dde82a24049d": "0012_1a00dde82a24049d.json",
+    "1a00de1b562fc367": "0013_1a00de1b562fc367.json",
+    "1a00de43c2b02073": "0014_1a00de43c2b02073.json",
+    "1a00ed023a5fe85e": "0015_1a00ed023a5fe85e.json",
+    "1a0132f0f9801cb2": "0016_1a0132f0f9801cb2.json",
+    "1a0150c6f7e33c2a": "0017_1a0150c6f7e33c2a.json",
+    "1a0182548e42e65c": "0018_1a0182548e42e65c.json"
+  },
+  "thread_of": {
+    "19fffb7a8c00bf8c": "19fffb7a8c00bf8c",
+    "19fffd7b5c1f2564": "19fffd7b5c1f2564",
+    "19fffe6693781cab": "19fffd7b5c1f2564",
+    "19ffff25c24f10d1": "19ffff25c24f10d1",
+    "1a0069bb243fcd6f": "1a0069bb243fcd6f",
+    "1a0069f5c0a9301c": "1a0069f5c0a9301c",
+    "1a006a201ee8b4de": "1a006a201ee8b4de",
+    "1a009478c91f859f": "1a009478c91f859f",
+    "1a009497d431273d": "1a009497d431273d",
+    "1a0094a9aec05a41": "1a0094a9aec05a41",
+    "1a00dc47841d8435": "1a00dc47841d8435",
+    "1a00dde82a24049d": "1a00dc47841d8435",
+    "1a00de1b562fc367": "1a00de1b562fc367",
+    "1a00de43c2b02073": "1a00de43c2b02073",
+    "1a00ed023a5fe85e": "1a00ed023a5fe85e",
+    "1a0132f0f9801cb2": "1a0132f0f9801cb2",
+    "1a0150c6f7e33c2a": "1a0150c6f7e33c2a",
+    "1a0182548e42e65c": "1a0182548e42e65c"
+  },
+  "threads": {
+    "19fffb7a8c00bf8c": [
+      "19fffb7a8c00bf8c"
+    ],
+    "19fffd7b5c1f2564": [
+      "19fffd7b5c1f2564",
+      "19fffe6693781cab"
+    ],
+    "19ffff25c24f10d1": [
+      "19ffff25c24f10d1"
+    ],
+    "1a0069bb243fcd6f": [
+      "1a0069bb243fcd6f"
+    ],
+    "1a0069f5c0a9301c": [
+      "1a0069f5c0a9301c"
+    ],
+    "1a006a201ee8b4de": [
+      "1a006a201ee8b4de"
+    ],
+    "1a009478c91f859f": [
+      "1a009478c91f859f"
+    ],
+    "1a009497d431273d": [
+      "1a009497d431273d"
+    ],
+    "1a0094a9aec05a41": [
+      "1a0094a9aec05a41"
+    ],
+    "1a00dc47841d8435": [
+      "1a00dc47841d8435",
+      "1a00dde82a24049d"
+    ],
+    "1a00de1b562fc367": [
+      "1a00de1b562fc367"
+    ],
+    "1a00de43c2b02073": [
+      "1a00de43c2b02073"
+    ],
+    "1a00ed023a5fe85e": [
+      "1a00ed023a5fe85e"
+    ],
+    "1a0132f0f9801cb2": [
+      "1a0132f0f9801cb2"
+    ],
+    "1a0150c6f7e33c2a": [
+      "1a0150c6f7e33c2a"
+    ],
+    "1a0182548e42e65c": [
+      "1a0182548e42e65c"
+    ]
+  },
+  "history": [
+    {
+      "history_id": 10,
+      "message_id": "19fffb7a8c00bf8c",
+      "thread_id": "19fffb7a8c00bf8c"
+    },
+    {
+      "history_id": 20,
+      "message_id": "19fffd7b5c1f2564",
+      "thread_id": "19fffd7b5c1f2564"
+    },
+    {
+      "history_id": 30,
+      "message_id": "19fffe6693781cab",
+      "thread_id": "19fffd7b5c1f2564"
+    },
+    {
+      "history_id": 40,
+      "message_id": "19ffff25c24f10d1",
+      "thread_id": "19ffff25c24f10d1"
+    },
+    {
+      "history_id": 50,
+      "message_id": "1a0069bb243fcd6f",
+      "thread_id": "1a0069bb243fcd6f"
+    },
+    {
+      "history_id": 60,
+      "message_id": "1a0069f5c0a9301c",
+      "thread_id": "1a0069f5c0a9301c"
+    },
+    {
+      "history_id": 70,
+      "message_id": "1a006a201ee8b4de",
+      "thread_id": "1a006a201ee8b4de"
+    },
+    {
+      "history_id": 80,
+      "message_id": "1a009478c91f859f",
+      "thread_id": "1a009478c91f859f"
+    },
+    {
+      "history_id": 90,
+      "message_id": "1a009497d431273d",
+      "thread_id": "1a009497d431273d"
+    },
+    {
+      "history_id": 100,
+      "message_id": "1a0094a9aec05a41",
+      "thread_id": "1a0094a9aec05a41"
+    },
+    {
+      "history_id": 110,
+      "message_id": "1a00dc47841d8435",
+      "thread_id": "1a00dc47841d8435"
+    },
+    {
+      "history_id": 120,
+      "message_id": "1a00dde82a24049d",
+      "thread_id": "1a00dc47841d8435"
+    },
+    {
+      "history_id": 130,
+      "message_id": "1a00de1b562fc367",
+      "thread_id": "1a00de1b562fc367"
+    },
+    {
+      "history_id": 140,
+      "message_id": "1a00de43c2b02073",
+      "thread_id": "1a00de43c2b02073"
+    },
+    {
+      "history_id": 150,
+      "message_id": "1a00ed023a5fe85e",
+      "thread_id": "1a00ed023a5fe85e"
+    },
+    {
+      "history_id": 160,
+      "message_id": "1a0132f0f9801cb2",
+      "thread_id": "1a0132f0f9801cb2"
+    },
+    {
+      "history_id": 170,
+      "message_id": "1a0150c6f7e33c2a",
+      "thread_id": "1a0150c6f7e33c2a"
+    },
+    {
+      "history_id": 180,
+      "message_id": "1a0182548e42e65c",
+      "thread_id": "1a0182548e42e65c"
+    }
+  ],
+  "final_history_id": 180,
+  "attachments": {}
+}

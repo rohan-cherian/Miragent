@@ -1,197 +1,184 @@
 """
-Production Gmail connector (Phase 4).
+itr/scout/connectors/gmail.py — GmailAdapter (Task 21).
 
-Reads mail via Desktop OAuth refresh token (secrets/gmail_token.json).
-Entity type: ``email_message``.
+Implements all four connector protocols from ``scout.connectors.base``:
+
+  MetadataReader   scan()                      -> MetadataInventory
+  DataReader       backfill() / fetch()        -> raw Gmail records
+  EventListener    verify() / to_events()      -> NotImplementedError in Slice 1
+  ActionExecutor   execute(ApprovedAction)     -> ActionResult
+
+EventListener raises rather than returning empty. Gmail has no plain webhook —
+real push is ``users.watch`` -> Pub/Sub -> HTTPS POST, and a watch expires after
+seven days, so Slice 1 polls. A stub that quietly returned ``[]`` would look
+like "no events" forever; raising says "not built" out loud.
+
+Sending goes through ``scout.gmail.executor.send_reply`` — the single function
+permitted to put mail on the wire. Nothing here duplicates it.
 """
 
 from __future__ import annotations
 
 import logging
-import time
-from collections.abc import Iterator
 from datetime import datetime, timezone
+from typing import Any
 
 from scout.config import settings
-from scout.connectors.base import ConnectorBase
-from scout.connectors.models import (
-    ConnectorCategory,
-    ConnectorCredentials,
-    ConnectorHealth,
-    EntitySchema,
-    ExtractionCursor,
-    RawRecord,
+from scout.connectors.base import (
+    ActionResult,
+    ApprovedAction,
+    MetadataInventory,
+    SendResult,
 )
-from scout.gmail.auth import GmailTokenStore
-from scout.gmail.client import GmailClient, GmailMessage
-from scout.gmail.customers import gmail_from_query, is_customer_sender, parse_sender_list
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["GmailAdapter"]
 
-class GmailConnector(ConnectorBase):
-    """
-    Gmail readonly connector.
+SOURCE_SYSTEM = "gmail"
 
-    Credentials (auth_data keys):
-        client_id / client_secret — OAuth Desktop client
-        refresh_token             — optional fallback
-        token_path                — default secrets/gmail_token.json
-        user_id                   — default ``me``
-    """
 
-    CONNECTOR_ID = "gmail"
-    DISPLAY_NAME = "Gmail (Readonly)"
-    CATEGORY = ConnectorCategory.PRODUCTIVITY
-    CALLS_PER_SECOND = 5.0
+class GmailAdapter:
+    """The Gmail source adapter. Satisfies all four protocols structurally."""
 
-    def __init__(self, credentials: ConnectorCredentials) -> None:
-        super().__init__(credentials)
-        self._client: GmailClient | None = None
+    def __init__(self, client: Any = None, account_id: str | None = None) -> None:
+        self._client = client
+        self._account_id = account_id
 
-    def authenticate(self) -> bool:
-        auth = self.credentials.auth_data
-        client_id = auth.get("client_id") or ""
-        client_secret = auth.get("client_secret") or ""
-        if not client_id or not client_secret:
-            logger.error("GmailConnector: missing client_id / client_secret")
-            return False
-        try:
-            self._client = GmailClient(
-                client_id=client_id,
-                client_secret=client_secret,
-                token_store=GmailTokenStore(
-                    auth.get("token_path") or "secrets/gmail_token.json"
-                ),
-                user_id=auth.get("user_id") or "me",
-                refresh_token_fallback=auth.get("refresh_token") or "",
+    # -- lazy client -------------------------------------------------------
+
+    @property
+    def client(self) -> Any:
+        if self._client is None:
+            from scout.gmail.client import get_client
+
+            self._client = get_client()
+        return self._client
+
+    @property
+    def account_id(self) -> str:
+        if self._account_id is None:
+            self._account_id = (
+                self.client.get_profile().get("emailAddress") or settings.gmail_user
             )
-            self._client.get_profile()
-            return True
-        except Exception:
-            logger.exception("GmailConnector: authenticate failed")
-            self._client = None
-            return False
+        return self._account_id
 
-    def discover_schema(self) -> list[EntitySchema]:
-        return [
-            EntitySchema(
-                entity_type="email_message",
-                display_name="Gmail Message",
-                supports_incremental=True,
-                fields=[
-                    "id",
-                    "thread_id",
-                    "subject",
-                    "from",
-                    "to",
-                    "snippet",
-                    "body_text",
-                    "internal_date_ms",
-                ],
-            )
-        ]
+    # -- MetadataReader ----------------------------------------------------
 
-    def extract_full(self, entity_type: str) -> Iterator[RawRecord]:
-        if entity_type != "email_message":
-            return
-        if self._client is None and not self.authenticate():
-            return
-        assert self._client is not None
-        allowed = parse_sender_list(settings.gmail_customer_senders)
-        q = gmail_from_query(allowed)
-        for msg in self._client.fetch_messages(max_results=100, q=q):
-            if is_customer_sender(msg.from_header, allowed):
-                yield self._to_raw(msg)
-
-    def extract_incremental(
-        self,
-        entity_type: str,
-        cursor: ExtractionCursor,
-    ) -> tuple[Iterator[RawRecord], ExtractionCursor]:
-        if entity_type != "email_message":
-            return iter(()), cursor
-        if self._client is None and not self.authenticate():
-            return iter(()), cursor
-        assert self._client is not None
-
-        last_ms = int(cursor.checkpoint.get("last_internal_date_ms") or 0)
-        allowed = parse_sender_list(settings.gmail_customer_senders)
-        q = gmail_from_query(allowed)
-
-        messages = [
-            m
-            for m in self._client.fetch_messages(max_results=100, q=q)
-            if is_customer_sender(m.from_header, allowed)
-            and m.internal_date_ms is not None
-            and m.internal_date_ms > last_ms
-        ]
-        max_ms = max((m.internal_date_ms or 0 for m in messages), default=last_ms)
-        new_cursor = ExtractionCursor(
-            connector_id=self.CONNECTOR_ID,
-            entity_type=entity_type,
-            last_extracted_at=datetime.now(timezone.utc),
-            checkpoint={"last_internal_date_ms": max_ms},
+    def scan(self) -> MetadataInventory:
+        """Describe the mailbox without extracting from it."""
+        profile = self.client.get_profile()
+        return MetadataInventory(
+            source_system=SOURCE_SYSTEM,
+            objects=[
+                {"name": "message", "count": profile.get("messagesTotal"), "custom": False},
+                {"name": "thread", "count": profile.get("threadsTotal"), "custom": False},
+            ],
+            threads=profile.get("threadsTotal"),
+            messages=profile.get("messagesTotal"),
+            # Gmail is the one real source in Slice 1; everything else is emulated.
+            is_emulated=settings.use_gmail_fixtures,
+            rate_limit={"quota_units_per_user_per_second": 250},
+            scanned_at=datetime.now(timezone.utc),
         )
 
-        def _gen() -> Iterator[RawRecord]:
-            for msg in messages:
-                yield self._to_raw(msg)
+    # -- DataReader --------------------------------------------------------
 
-        return _gen(), new_cursor
+    def backfill(self, cursor: str | None = None) -> Any:
+        """Walk the mailbox, resuming from ``cursor`` (a page token)."""
+        return self.client.iter_all_message_ids(start_page_token=cursor)
 
-    def health_check(self) -> ConnectorHealth:
-        started = time.time()
-        if self._client is None and not self.authenticate():
-            return ConnectorHealth(
-                connector_id=self.CONNECTOR_ID,
-                is_healthy=False,
-                error_message="not authenticated",
-            )
-        try:
-            assert self._client is not None
-            self._client.get_profile()
-            return ConnectorHealth(
-                connector_id=self.CONNECTOR_ID,
-                is_healthy=True,
-                latency_ms=(time.time() - started) * 1000.0,
-            )
-        except Exception as exc:
-            return ConnectorHealth(
-                connector_id=self.CONNECTOR_ID,
-                is_healthy=False,
-                error_message=str(exc),
-                latency_ms=(time.time() - started) * 1000.0,
-            )
+    def fetch(self, entity: str, external_id: str) -> Any:
+        if entity in ("message", "messages"):
+            return self.client.get_message(external_id, format="full")
+        raise ValueError(f"GmailAdapter cannot fetch entity {entity!r}")
 
-    def _to_raw(self, msg: GmailMessage) -> RawRecord:
-        return RawRecord(
-            connector_id=self.CONNECTOR_ID,
-            entity_type="email_message",
-            source_id=msg.id,
-            tenant_id=self.tenant_id,
-            payload={
-                "id": msg.id,
-                "thread_id": msg.thread_id,
-                "subject": msg.subject,
-                "from": msg.from_header,
-                "to": msg.to_header,
-                "snippet": msg.snippet,
-                "body_text": msg.body_text,
-                "internal_date_ms": msg.internal_date_ms,
-                "history_id": msg.history_id,
-                "label_ids": list(msg.label_ids),
-            },
-            email_hint=_email_from_header(msg.from_header),
-            name_hint=msg.subject,
+    # -- EventListener (Slice 1: polling only) ------------------------------
+
+    def verify(self, headers: dict[str, str], body: bytes) -> bool:
+        raise NotImplementedError(
+            "Gmail has no signed webhook; Slice 1 polls. Push arrives via "
+            "Pub/Sub at scout.gmail.ingest_api, which needs no signature check."
         )
 
+    def to_events(self, body: bytes) -> list[dict[str, Any]]:
+        raise NotImplementedError(
+            "Gmail push carries only {emailAddress, historyId}, never the mail. "
+            "Slice 1 re-syncs instead of parsing events."
+        )
 
-def _email_from_header(header: str) -> str | None:
-    if not header:
-        return None
-    if "<" in header and ">" in header:
-        return header.split("<", 1)[1].split(">", 1)[0].strip()
-    if "@" in header:
-        return header.strip()
-    return None
+    # -- ActionExecutor ----------------------------------------------------
+
+    def execute(self, action: ApprovedAction, **kwargs: Any) -> ActionResult:
+        """Execute an approved action. The type carries the approval."""
+        if action.action_type not in ("send_reply", "reply", "email_reply"):
+            raise ValueError(f"GmailAdapter cannot execute {action.action_type!r}")
+        from scout.gmail.executor import send_reply
+
+        result = send_reply(
+            approval_id=action.approval_id,
+            case_id=action.case_id,
+            payload_hash=action.payload_hash,
+            **kwargs,
+        )
+        return result.as_action_result()
+
+    # -- convenience used by Task 22's dispatch -----------------------------
+
+    def send_reply(self, *, case_id: Any, body: str, **kwargs: Any) -> str:
+        """Resolve reply details from the canonical layer, then send.
+
+        Task 22 (``scout/canonical/execution.py``) calls this with only
+        ``case_id`` and ``body``; recipient, subject, thread and the approval
+        are looked up here so the canonical layer never has to know Gmail's
+        shape. Returns the Gmail message id, which is what it stores as
+        ``execution_ref``.
+        """
+        from scout.gmail.executor import send_reply as _send
+
+        details = self._reply_details(case_id)
+        details.update({k: v for k, v in kwargs.items() if v is not None})
+        result: SendResult = _send(body_text=body, **details)
+        return result.message_id
+
+    def _reply_details(self, case_id: Any) -> dict[str, Any]:
+        """Look up recipient, subject, thread and approval for a case."""
+        from sqlalchemy import create_engine, select
+        from sqlalchemy.orm import Session
+
+        from scout.canonical.models import Case, Message, Person, RecommendationDecision
+
+        engine = create_engine(settings.database_url, pool_pre_ping=True)
+        with Session(engine) as session:
+            case = session.scalar(select(Case).where(Case.id == case_id))
+            if case is None:
+                raise ValueError(f"no case {case_id}")
+
+            # Newest inbound message decides the thread and the message we reply to.
+            inbound = session.scalars(
+                select(Message)
+                .where(Message.case_id == case_id, Message.direction == "inbound")
+                .order_by(Message.sent_at.desc())
+            ).first()
+
+            requester = session.scalar(select(Person).where(Person.id == case.requester_id))
+            decision = session.scalars(
+                select(RecommendationDecision)
+                .where(RecommendationDecision.case_id == case_id)
+                .order_by(RecommendationDecision.decided_at.desc())
+            ).first()
+
+        if requester is None or not requester.primary_email:
+            raise ValueError(f"case {case_id} has no requester email to reply to")
+        if decision is None:
+            raise ValueError(f"case {case_id} has no decision to send")
+
+        return {
+            "approval_id": decision.id,
+            "case_id": case_id,
+            "to_address": requester.primary_email,
+            "subject": (inbound.subject if inbound else None) or case.subject,
+            "thread_external_id": inbound.thread_id if inbound else None,
+            "in_reply_to_message_id": inbound.src_message_id if inbound else None,
+            "payload_hash": decision.payload_hash or "",
+        }

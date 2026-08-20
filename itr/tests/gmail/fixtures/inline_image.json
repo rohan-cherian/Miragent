@@ -1,0 +1,63 @@
+{
+  "id": "f-inline",
+  "threadId": "t-f-inline",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Sara Lin <sara@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "Error screenshot"
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "mimeType": "multipart/related",
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [],
+        "body": {
+          "size": 10,
+          "data": "U2NyZWVuc2hvdCBvZiB0aGUgZXJyb3IgaXMgaW5saW5lIGJlbG93Lg"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "image/png",
+        "filename": "error.png",
+        "headers": [
+          {
+            "name": "Content-Disposition",
+            "value": "inline; filename=\"error.png\""
+          },
+          {
+            "name": "Content-ID",
+            "value": "<img1>"
+          }
+        ],
+        "body": {
+          "size": 120,
+          "attachmentId": "att-img1"
+        }
+      }
+    ]
+  }
+}

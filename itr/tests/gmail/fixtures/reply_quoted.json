@@ -1,0 +1,41 @@
+{
+  "id": "f-reply",
+  "threadId": "t-f-reply",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Priya Nair <priya.nair@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "Re: Laptop will not boot"
+      },
+      {
+        "name": "In-Reply-To",
+        "value": "<orig-1@mail.example>"
+      },
+      {
+        "name": "References",
+        "value": "<orig-1@mail.example>"
+      }
+    ],
+    "body": {
+      "size": 10,
+      "data": "U2FmZSBtb2RlIGRpZCBub3QgaGVscCBlaXRoZXIuCgotLSAKUHJpeWEgTmFpcgpPcGVyYXRpb25zIE1hbmFnZXIKKzQ0IDIwIDc5NDYgMDk1OAoKT24gVHVlLCAxMiBBdWcgMjAyNiBhdCAwOToxNCwgU3VwcG9ydCA8c3VwcG9ydEBtb3RpdmVtaW5kcy5jb20-IHdyb3RlOgo-IEhhdmUgeW91IHRyaWVkIGJvb3RpbmcgaW50byBzYWZlIG1vZGU_Cj4gTGV0IHVzIGtub3cgaG93IGl0IGdvZXMuCg"
+    },
+    "mimeType": "text/plain"
+  }
+}

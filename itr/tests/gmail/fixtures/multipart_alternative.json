@@ -1,0 +1,54 @@
+{
+  "id": "f-alt",
+  "threadId": "t-f-alt",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Maya Iyer <maya@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "Printer offline"
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "mimeType": "multipart/alternative",
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [],
+        "body": {
+          "size": 10,
+          "data": "VGhlIDNyZCBmbG9vciBwcmludGVyIGlzIG9mZmxpbmUgYWdhaW4u"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [],
+        "body": {
+          "size": 10,
+          "data": "PHA-VGhlIDNyZCBmbG9vciBwcmludGVyIGlzIDxpPm9mZmxpbmU8L2k-IGFnYWluLjwvcD4"
+        }
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # Miragent workstream notes
 
-**Latest:** W1-SRC-06 Workday emulator API — **Complete**  
-**Complete stack:** W1-SRC-06 · W1-PLT-06 · W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
+**Latest:** Gmail → MinIO raw connector — **Complete**  
+**Complete stack:** Gmail raw connector · W1-SRC-06 · W1-PLT-06 · W1-CON-01 · W1-API-01 · W1-SRC-05 · W1-SRC-04
 
 ---
 
@@ -20,24 +20,228 @@ Browser / Postman
                                                         └─ src_workday
 
    :16686 Jaeger UI  ◄── OTLP :4318 ──  Console API (+ emulators) traces
+
+   Gmail API ──► :8092 Ingestion API (push) ──┐
+                 scripts/gmail_sync_loop      ├──► MinIO raw bucket :9000
+                                              └──► Postgres src_gmail (ledger)
 ```
 
 | Port | Service | Ticket |
 |------|---------|--------|
-| **5433** | Postgres (`src_zendesk` + `src_workday`) | shared data |
+| **5433** | Postgres (`src_zendesk` + `src_workday` + `src_gmail`) | shared data |
 | **8081** | Zendesk emulator | W1-SRC-05 |
 | **8082** | Workday RaaS emulator | W1-SRC-06 |
 | **8090** | Console FastAPI | W1-API-01 |
+| **8092** | Ingestion API (Gmail push receiver) | Gmail raw connector |
 | **8080** | Console UI (compose/nginx) | W1-CON-01 |
 | **5173** | Console UI (Vite dev) | W1-CON-01 |
 | **16686** | Jaeger UI (trace viewer) | W1-PLT-06 |
 | **4318** | OTLP HTTP collector | W1-PLT-06 |
+| **9000** | MinIO S3 API (`raw` bucket, remote 140.245.252.42) | Gmail raw connector |
+| **9001** | MinIO console (remote) | Gmail raw connector |
 
 **Keep ports separate** — emulator ≠ console API. Emulators share Postgres only.
 
 **Compose files:**
 - `docker-compose.zendesk-emulator.yml` — Postgres only (host port 5433)
 - `docker-compose.console.yml` — Jaeger + Postgres + console API + console UI
+
+---
+---
+
+# Gmail → MinIO raw connector
+
+**Status:** Complete  
+**Location:** `itr/scout/gmail/` (raw path) + `itr/scout/raw/`  
+**Tests:** `itr/tests/gmail/` — 54 passing (11 need Postgres, skipped without it)  
+**Depends on:** Gmail Desktop OAuth (`secrets/gmail_token.json`); MinIO `raw` bucket; Postgres `src_gmail`
+
+---
+
+## What this work is
+
+Every message in the mailbox — text, HTML, headers, attachments — becomes **one
+self-contained JSON document** in the MinIO raw bucket. Unfiltered by design:
+the raw lake takes everything, filtering happens downstream.
+
+There is **one pipeline and one cursor** now. The separate ticket sync that
+used to run alongside this — with its own allowlist and its own cursor — was
+deleted, and `scout/gmail/sync.py` is the raw sync. The cursor is
+`src_gmail.sync_state`, the name the Slice-1 doc uses (Task 5 "stays EXACTLY
+as built", Task 6 "checkpoint sync_state.history_id"); it was called
+`raw_sync_state` while both pipelines coexisted. The dead pipeline's final
+position is kept in `src_gmail.sync_state_legacy` — one row, safe to drop
+whenever nobody wants it.
+
+---
+
+## Object layout
+
+```
+raw/
+└── gmail/
+    └── 2026/08/14/
+        ├── email_19fffd7b5c1f2564.json
+        └── email_19fffe6693781cab.json
+```
+
+**The Gmail message ID is the object name** (handover doc §3, §7, §15). That
+makes the key fully derivable from the message, which is what lets the bucket
+itself be the duplicate check.
+
+`YYYY/MM/DD` is the **mail received date** (Gmail `internalDate`, UTC), not the
+sync date — so a message always lands in the same folder and backfills stay
+correct. Set `GMAIL_RAW_PARTITION_BY=ingested` to key on wall clock instead.
+
+Multi-mailbox: set `GMAIL_RAW_PATH_LAYOUT=account` for
+`gmail/<account_id>/YYYY/MM/DD/`.
+
+---
+
+## Never writing the same mail twice
+
+Per handover doc §8 the **bucket is the authority**, not a tracking table:
+
+1. **Pre-filter** (optional) — ids the ledger already recorded are dropped
+   before any Gmail call. Pure quota saving; not the guarantee.
+2. **Derive the key** from message id + received date.
+3. **HEAD it** (`stat_object`). Exists → skip and log. Missing → **PUT**.
+4. Record it in `src_gmail.raw_objects` for audit.
+
+Because the key is deterministic, two syncers racing one message write
+identical bytes to one key. There is no interleaving that yields two objects.
+A failed PUT is never recorded as stored, so the next run retries it.
+
+**Self-healing.** When HEAD finds an object the ledger has no row for (wiped
+table, or a crash between PUT and record), the row is rebuilt from the metadata
+stamped on the object. Without this the pre-filter would stay cold forever and
+the audit trail would under-report what is stored.
+
+**Verified:** `TRUNCATE`d the entire ledger and re-ran — all 21 messages were
+caught as duplicates by HEAD, 0 rewritten, object count unchanged, and all 21
+audit rows healed from object metadata. Losing Postgres costs a slower
+re-scan, never a duplicate.
+
+---
+
+## JSON document
+
+Top-level keys are **exactly** the handover doc §6 example, so a consumer
+written against that shape works unchanged:
+
+```json
+{ "source", "message_id", "thread_id", "from", "to",
+  "subject", "body", "received_at" }
+```
+
+`body` is plain text, falling back to stripped HTML then snippet, so it is
+never empty. Everything below is additive fidelity:
+
+| Field | Contents |
+|--------|----------|
+| `body_text` / `body_html` | both bodies verbatim; attachment parts never mistaken for a body |
+| `headers` / `headers_all` / `headers_raw` | promoted map · full map · ordered list keeping duplicates |
+| `attachments[]` | `data_base64` + `sha256` + filename/mime/size; oversized ones keep metadata and set `truncated` |
+| `mime_tree` | Gmail's part tree with `body.data` stripped (bytes already captured above) |
+| `cc` `bcc` `reply_to` `label_ids` `snippet` `internal_date_ms` `history_id` | as named |
+| `content_sha256` | content fingerprint excluding `ingested_at`, so re-ingest is comparable |
+
+Attachments over `GMAIL_RAW_MAX_ATTACHMENT_BYTES` (default 25 MiB) are recorded
+without bytes. One failing attachment never loses the message.
+
+**Malformed input** (§16): a message with a blank id, or one whose id contains
+path-unsafe characters, is skipped and logged to `src_gmail.raw_skipped` rather
+than written under a broken name.
+
+---
+
+## Sync + push
+
+The **60s poller is the workhorse**; push only makes it sooner. Gmail has no
+plain webhook — real push is `users.watch` → Cloud Pub/Sub → HTTPS POST, and a
+watch expires after 7 days, so the poller stays on regardless.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /gmail/push?token=…` | Pub/Sub push target; ACKs 204, syncs in background |
+| `POST /gmail/sync` | manual trigger, runs inline |
+| `GET /gmail/status` | ledger counts, cursor, recent objects |
+
+---
+
+## Where it lives
+
+```
+itr/scout/raw/
+  __init__.py · minio_client.py · keys.py
+itr/scout/gmail/
+  envelope.py · raw_ledger.py · sync.py   (+ client.py reworked)
+itr/scout/gmail/ingest_api.py   # push receiver + app factory (moved out of
+                                # scout/api/ — that folder is Sutej's Task 24,
+                                # and the Task 4 lint bans scout.gmail imports there)
+itr/schema/002_src_gmail_raw.sql
+itr/scripts/
+  load_gmail_schema.py · minio_smoke_test.py
+  gmail_sync_once.py · gmail_sync_loop.py · gmail_watch_register.py
+itr/tests/gmail/
+  test_raw_envelope.py · test_raw_keys.py · test_sync.py
+  test_raw_ledger_postgres.py
+```
+
+**Schema numbering** follows the Slice-1 doc, which claims `003` for Task 5
+(`003_src_gmail_regrain.sql`) and `004` for Task 6 (`004_raw_ingest.sql`).
+The raw ledger was renumbered to `002` to leave those free — do not reuse
+`003`/`004` for anything else.
+
+Filenames match the Slice-1 doc where the doc names a genuine equivalent
+(`sync.py`, `gmail_sync_once.py`, `gmail_sync_loop.py`, `load_gmail_schema.py`).
+`envelope.py` and `customers.py` deliberately keep their names: the doc's
+`mime.py` (Task 7) and `filters.py` (Task 8) are different components, not
+renames of these.
+
+---
+
+## How to run
+
+MinIO credentials live in `itr/.env.local` (gitignored) as
+`MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_BUCKET`.
+Handover doc §11 forbids committing them, so the defaults in `config.py` are
+deliberately blank and the client fails loudly if they are unset.
+
+```powershell
+cd itr
+docker compose -f ..\docker-compose.zendesk-emulator.yml up -d
+poetry run python scripts/load_gmail_schema.py
+poetry run python scripts/minio_smoke_test.py
+
+poetry run python scripts/gmail_sync_once.py --backfill --list   # whole mailbox
+poetry run python scripts/gmail_sync_loop.py --interval 60       # then leave running
+```
+
+Optional push (needs a GCP Pub/Sub topic + public HTTPS endpoint):
+
+```powershell
+poetry run uvicorn scout.gmail.ingest_api:create_app --factory --port 8092
+poetry run python scripts/gmail_watch_register.py --topic projects/<p>/topics/<t>
+```
+
+```powershell
+poetry run pytest tests/gmail -v
+```
+
+---
+
+## Status
+
+**Gmail → MinIO raw connector: Complete** — conforms to
+`Gmail_MinIO_Raw_Bucket_Rohan_Handover_Final 1.docx`. 21 messages across 5 date
+partitions verified in the live bucket; repeat runs write nothing, and a full
+ledger wipe still produces zero duplicates.
+
+Note: handover doc §4 shows `email_001.json` while §3/§7/§9/§15/§17/§18 specify
+`email_<message_id>.json`. Built to the message-ID form — six sections against
+one, and §3 relies on it as the reason versioning can stay disabled. Worth
+correcting §4 in the document.
 
 ---
 ---
@@ -622,5 +826,8 @@ tests/shared/
 | **W1-API-01** | FastAPI console skeleton | Complete |
 | **W1-CON-01** | Console shell (React/Vite/Tailwind) | Complete |
 | **W1-PLT-06** | Observability baseline (JSON logs + OTel + Jaeger) | Complete |
+| **Gmail raw** | Gmail → JSON → MinIO `raw` bucket (dedup ledger + 60s sync) | Complete |
 
-**Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-two reconciliation against dual Workday columns · week-four write-back.
+**Next (expected):** fill console screens · more console API endpoints · event listener for HMAC webhooks · remaining vendor emulators · week-two reconciliation against dual Workday columns · week-four write-back · canonical normalisation reading from `raw/gmail/`.
+
+**Known gap:** `itr/scout/connectors/gmail.py` (the `ConnectorBase` implementation) does not import — `scout/connectors/base.py` and `models.py` do not exist. It is unused dead code and predates the raw connector; either complete or delete it.

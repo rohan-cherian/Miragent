@@ -6,7 +6,7 @@ import base64
 import json
 from pathlib import Path
 
-from scout.gmail.auth import GmailTokenStore, GmailStoredTokens, build_authorization_url
+from scout.gmail.auth import GmailStoredTokens, GmailTokenStore, build_authorization_url
 from scout.gmail.client import parse_message
 
 

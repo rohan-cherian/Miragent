@@ -1,0 +1,160 @@
+{
+  "id": "19ffff25c24f10d1",
+  "threadId": "19ffff25c24f10d1",
+  "historyId": "40",
+  "originalHistoryId": "2315",
+  "internalDate": "1786705489000",
+  "labelIds": [
+    "UNREAD",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Sorry ,not sure my earlier email went through.Licence keys still rejected after renewal",
+  "sizeEstimate": 7272,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/alternative",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Delivered-To",
+        "value": "motiveminds.itsupport@gmail.com"
+      },
+      {
+        "name": "Received",
+        "value": "by 2002:a05:6214:883:b0:8f0:da16:84a1 with SMTP id cz3csp1892064qvb;        Fri, 14 Aug 2026 04:05:01 -0700 (PDT)"
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:4022:b0:481:58ac:7aeb with SMTP id ffacd0b85a97d-481607382c5mr7014390f8f.15.1786705501240;        Fri, 14 Aug 2026 04:05:01 -0700 (PDT)"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=2; a=rsa-sha256; t=1786705501; cv=pass;        d=google.com; s=arc-20260327;        b=cPCzQ12FjT7Yb6d4Q2DvKFVYSqzKVnx3GhIj/FU7zSf2XVB32BkqgkxyU2xrBXr2jD         1nTZwFyNhGNQHI7O0o7Rk3THeXotClBbR2N0OvLZGzacz+ppVVdFWFnOwyQrJEOtmyO0         JDYkZ7mfqazHyc60K0Okw1eu8LymWU1TmBhobo5PBm/BruPn2dF/JlnRW202NWtVeVSa         ygwX5BD7nzDNbbBvVeDaZXmgF4onAK9bUcJ/7kAgJpgAXZnVYR15ZK+4XaqB6DSlbBNB         1I6D2doMWif0zSzjkfROkHXvv8v1/WHll3D9T+1JOQUjeSDudegvV8PWa14vg3a7MaEv         jNhw=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=y//rUYE5O+phvID5zT5EwWS96K0RMsTOobylZN23UsI=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=XqNvh0uvolhjj6FWg4En+rdZ1zyBeVWQrvxNvRia959qjY9JF0WCt/SZjqHIrCCxaU         lAzJmIvJqrcLkJAG/9cvTOpsBmEi8MH3IocblJ+9vl9B5yB0K1GucIVkCYUd4Y2W1F3X         LfGqdodHOTLohDYa4yiJrhTMJRNVbItd9d6+BvQOnwEjN6IOKJ008SGXPZyTt5OBNcwt         D489sLTgsMKrQ1zP5ZoCGC73Io0OCMAflWZLM0+gfg7o9OwPbCUHQfK1rGsyn5gZiYTc         lMcy3mQQy19I7GoEZRsd6rnHsQBLZU4Ft2solWKN7uAN4LueKnX0dT3MZmhCKtRD3bwa         gkpQ==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=2; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=SpQr+ZiS;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.vihaan@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "Return-Path",
+        "value": "<motiveminds.vihaan@gmail.com>"
+      },
+      {
+        "name": "Received",
+        "value": "from mail-sor-f65.google.com (mail-sor-f65.google.com. [209.85.220.65])        by mx.google.com with SMTPS id ffacd0b85a97d-4815f202eebsor488201f8f.1.2026.08.14.04.05.01        for <motiveminds.itsupport@gmail.com>        (Google Transport Security);        Fri, 14 Aug 2026 04:05:01 -0700 (PDT)"
+      },
+      {
+        "name": "Received-SPF",
+        "value": "pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) client-ip=209.85.220.65;"
+      },
+      {
+        "name": "Authentication-Results",
+        "value": "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20251104 header.b=SpQr+ZiS;       arc=pass (i=1);       spf=pass (google.com: domain of motiveminds.vihaan@gmail.com designates 209.85.220.65 as permitted sender) smtp.mailfrom=motiveminds.vihaan@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;       dara=pass header.i=@gmail.com"
+      },
+      {
+        "name": "ARC-Seal",
+        "value": "i=1; a=rsa-sha256; t=1786705501; cv=none;        d=google.com; s=arc-20260327;        b=QdbSqBVNHeFjWTay3Itm1LQM9RcNWjZ5mjbMCSJW/XrnPF+DNP5wQnNnzgPvn9TR1A         eqZteJprVwhNcazh4nDE2qjpMAL1R9QOQpnlQASnn42UTQJhjoDapFs4USseIcCShQtx         W0ppX/B1zQ1FIgg7O5HufauOapbHQdpe/D3rEYjj5PlXHv/1AmrD/vQKANMpa+dcrO7F         ALJ6v6o+w4m/LqtBv1g8ZjMQyC/o9Mh1ZsTD6BhoRXIFbNbd74Rc0ySC835u8QDOA6Bv         EVOJKRYSWbGegpJqdmQ2jQzV/RnWPVR8q1xO5oGB4LuBPIq4aOh6l+Co80H5Y+7YYCKy         UT2A=="
+      },
+      {
+        "name": "ARC-Message-Signature",
+        "value": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=to:subject:message-id:date:from:mime-version:dkim-signature;        bh=y//rUYE5O+phvID5zT5EwWS96K0RMsTOobylZN23UsI=;        fh=4dnSregqaRllV2Uyls0S0HGHVEEUaInE0pENvyMMUlc=;        b=VOGCWT4asyEN1kAiVKbhAn1lyETtQF5OPsvA8rPr/ew6UW43wAnqtEOlWX+vX6yCqf         9aP+lKPtDeC4UIR/Wb9snqxsR75xvPGwH+MatJsRNGSIsM5Cse2QlzJC2xofnpzLLvWM         8WxxaxsTjblGxFtqeHc5dINSEFDHn94zpcWZyXxkRqXX4lOpp7rDbUYzIkCd6pq9uhYo         9NlKndrHtuVoTHnYYcZa1wRgZCzfYMHq9ki6/kaA4P6lSVytybtCD/biBmU8W392cwgW         iD7nlPAXL2qp7wQ+G5goTOGmQKV8KpJ0nVmnCNfeq6gi+r064JzRBQ/oJdDqCcolu5tW         mF4Q==;        dara=google.com"
+      },
+      {
+        "name": "ARC-Authentication-Results",
+        "value": "i=1; mx.google.com; arc=none"
+      },
+      {
+        "name": "DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20251104; t=1786705501; x=1787310301; dara=google.com;        h=content-type:to:subject:message-id:date:from:mime-version:from:to         :cc:subject:date:message-id:reply-to:content-type;        bh=y//rUYE5O+phvID5zT5EwWS96K0RMsTOobylZN23UsI=;        b=SpQr+ZiSqnsfUgexUqYHshvCJDT7PB6AsD+FcUK8zbWTkHz3YkfI3o56myvQ56A4Ge         5PZ8GeefcdrytJQXaB/lcLDn7cyOAbLJZN/0zzNL5IacyA7zBj+B2jkYjOk9Fnf0pkhs         JX7XA3W6Clu/N1WQip8RS+AVrvIfWHQlr5JEHC8U82vA9iHI3j1sNbng0f4J/a3iEt8P         0QAYa9U3KeR4chouC5aD1XfT64VOXI1Jhl8tzh+S5GsmnMyEm1yqS8N6Egnpj+kiN8Vx         kXUBFA3Tby6ivEoTUxrzGxDlSgB/uaa0mTyxnES05B4tqK8wrnDgQp0Zbkt8IGmD6AI1         CaEA=="
+      },
+      {
+        "name": "X-Google-DKIM-Signature",
+        "value": "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20251104; t=1786705501; x=1787310301;        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to         :content-type;        bh=y//rUYE5O+phvID5zT5EwWS96K0RMsTOobylZN23UsI=;        b=BbRH2uTxSFoniWPjUZtjmGiFh+T0bRrCWrePtwsrK9+r6FyjMSvQTcStUXFaZScxdr         kFbh5F0GiC+MzxIJy0uj8qdPwNSLxOK3MDuAx7Dq30izDPbuwKtEOtvsT/l2Dkkhwlbw         zas1zTFUlHz4pC/a5jbwkGxLhS4Zso6geZZETB6+hOyy8n3p9lOonYKpEPv+GTXW7yiN         /5z7lq/px5hRp1AU9hunAhQlP7ZY0ffW895b/whFUmVW8nB/hT0JxQZVNAI0PojQFfsS         8SAzGFh3KrjxTl2Eg/9c9Nv1hwlLaOovVYTIAbQi8NNkqA2gzFI2j8UEhko332F7nr/B         Cnqg=="
+      },
+      {
+        "name": "X-Gm-Message-State",
+        "value": "AOJu0YzLZ4Vs5K551su88/hggFDa8Cb0hTjyZqqywvVv/UZs1WrKc32K vPLcsal8DgJa9lpdm9HMVSZ8TDtJiwJalTk7pdsEQ/hTQe1EqSNmPt1k0cwd1gVan8B69mdWGMj ItD3724yW+pf4llHO2kuxbnF77EtAVdDYMtzPAZ4="
+      },
+      {
+        "name": "X-Gm-Gg",
+        "value": "AR+sD11ybI4hl/jhQAFDMsn6Hmm7EDGSAcrp6Y2pSBGPq7Ba2gGvsSzqKoW84NxONqb BI+HejpsWbBdjzUi6wawB+QNvguYEyaM4V9iNFXYWowNPxc5s+NJCk2c9PWO37t20/58MMBWRsW e0vZF916s6ZR0VlqJ1ePsKAEmkBrvd9aUCxbCFj6v/eaTQu7AleibxN+gHCnlUqxWqWnXyKpCMx iyQ1dvQl9RE7g719O3v/j+0zEbLi9SPgz8MI9VkYdEl6uWiodI1KXyMJ6orWMSI10ak+0yRXVFu iyzvs1FvpOyNFt/yQAmuNoA092hD5T4XPpe/q4PNj/CoDew="
+      },
+      {
+        "name": "X-Received",
+        "value": "by 2002:a05:6000:470d:b0:481:5167:d526 with SMTP id ffacd0b85a97d-481606f4665mr7510224f8f.6.1786705500615; Fri, 14 Aug 2026 04:05:00 -0700 (PDT)"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "From",
+        "value": "Motiveminds Vihan <motiveminds.vihaan@gmail.com>"
+      },
+      {
+        "name": "Date",
+        "value": "Fri, 14 Aug 2026 16:34:49 +0530"
+      },
+      {
+        "name": "X-Gm-Features",
+        "value": "AUfX_mwNRxMZV4N0pS8rv4iVlgAZxvdeIruDRpl9c7A3SC5qHG6qlkfcNHqD5co"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAMV30rF1WrHhWJLi3fwDHsqRmQ4jf1-Ps59EHreRZWe8UDjpmQ@mail.gmail.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "License Activation still failing"
+      },
+      {
+        "name": "To",
+        "value": "\"motiveminds.itsupport@gmail.com\" <motiveminds.itsupport@gmail.com>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/alternative; boundary=\"000000000000aeb8620658ffcab2\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/plain; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 88,
+          "data": "U29ycnkgLG5vdCBzdXJlIG15IGVhcmxpZXIgZW1haWwgd2VudCB0aHJvdWdoLkxpY2VuY2Uga2V5cyBzdGlsbCByZWplY3RlZA0KYWZ0ZXIgcmVuZXdhbA"
+        }
+      },
+      {
+        "partId": "1",
+        "mimeType": "text/html",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=\"UTF-8\""
+          }
+        ],
+        "body": {
+          "size": 108,
+          "data": "PGRpdiBkaXI9Imx0ciI-U29ycnkgLG5vdCBzdXJlIG15IGVhcmxpZXIgZW1haWwgd2VudCB0aHJvdWdoLkxpY2VuY2Uga2V5cyBzdGlsbCByZWplY3RlZCBhZnRlciByZW5ld2FsPC9kaXY-"
+        }
+      }
+    ]
+  }
+}

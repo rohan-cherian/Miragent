@@ -1,0 +1,33 @@
+{
+  "id": "f-plain",
+  "threadId": "t-f-plain",
+  "historyId": "900",
+  "internalDate": "1786524187000",
+  "labelIds": [
+    "INBOX"
+  ],
+  "snippet": "",
+  "payload": {
+    "partId": "",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "\"Priya Nair\" <priya.nair@northwind.example>"
+      },
+      {
+        "name": "To",
+        "value": "support@motiveminds.com"
+      },
+      {
+        "name": "Subject",
+        "value": "Laptop will not boot"
+      }
+    ],
+    "body": {
+      "size": 10,
+      "data": "SGkgdGVhbSwKCk15IGxhcHRvcCB3aWxsIG5vdCBib290IGFmdGVyIHRoaXMgbW9ybmluZydzIHVwZGF0ZS4KCi0tIApQcml5YSBOYWlyCk9wZXJhdGlvbnMgTWFuYWdlcgpwcml5YS5uYWlyQG5vcnRod2luZC5leGFtcGxlCis0NCAyMCA3OTQ2IDA5NTgK"
+    },
+    "mimeType": "text/plain"
+  }
+}

@@ -1,15 +1,18 @@
 """
 itr/scout/config.py — Centralised configuration for ITR Slice 1.
 
-Shared surface [RS]: Gmail credentials, thresholds, pins, ACTION_MODE.
+Shared surface [RS] — both sides have now landed here:
+  Rohan:          Gmail OAuth + scopes, MinIO raw lake.
+  Sutej (Task 3): DATABASE_URL, TENANT_ID, thresholds, embeddings pins,
+                  LLM tiers, ACTION_MODE.
+
+One field, one definition. These are plain class attributes, so a second
+assignment of the same name silently wins — if you are adding settings here,
+extend the existing block rather than opening a parallel one.
 
 All values come from environment variables (read from itr/.env.local on a
 laptop, injected by the platform elsewhere). The code never changes — only
 the environment does.
-
-Carried over from the pre-itr scout/config.py: only the Gmail block moved.
-Neo4j / ClickHouse / Weaviate / Redis settings deliberately did NOT come
-across — Slice 1 infra is postgres · minio · qdrant only.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +31,7 @@ class Settings(BaseSettings):
 
     # ── Environment ───────────────────────────────────────────────────────────
     environment: str = "development"
+    # TENANT_ID / thresholds / ACTION_MODE now live further down — Task 3 landed.
 
     # ── Gmail integration (Desktop OAuth + polling sync) ─────────────────────
     gmail_client_id: str = ""
@@ -39,32 +43,87 @@ class Settings(BaseSettings):
     gmail_database_url: str = (
         "postgresql://zendesk_admin:zendesk_dev@localhost:5433/zendesk_agent"
     )
-    gmail_scopes: str = "https://www.googleapis.com/auth/gmail.readonly"
-    # Comma-separated From addresses allowed to become tickets (customer-only sync)
-    gmail_customer_senders: str = (
-        "motiveminds.vihaan@gmail.com,"
-        "motiveminds.jennifer@gmail.com,"
-        "motiveminds.ojasvi@gmail.com"
+    # Task 1: read + send. Space-separated — auth.py urlencodes this as one
+    # `scope` parameter. Send scope is required by the Task 21 ActionExecutor.
+    gmail_scopes: str = (
+        "https://www.googleapis.com/auth/gmail.readonly "
+        "https://www.googleapis.com/auth/gmail.send"
     )
+
+    # ── MinIO / S3 raw lake ───────────────────────────────────────────────────
+    # Slice 1 raw landing zone. S3-compatible, so the same settings point at
+    # real S3 by changing the endpoint and dropping path-style addressing.
+    #
+    # Credentials are deliberately BLANK here — handover doc section 11 forbids
+    # committing them to source. Set them in .env.local (gitignored) or inject
+    # them from the platform's secret store. The endpoint is not a credential,
+    # so it carries the real default: an Oracle Cloud Compute VM, not local
+    # docker. Host:port only, no scheme.
+    minio_endpoint: str = "140.245.252.42:9000"
+    minio_console_url: str = "http://140.245.252.42:9001"  # web console only
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
+    minio_bucket: str = "raw"
+    minio_region: str = "us-east-1"
+    minio_secure: bool = False  # True only once this endpoint is behind HTTPS
+    minio_addressing_style: str = "path"  # MinIO needs path-style, not virtual-host
+
+    # ── Gmail → raw lake ingestion ────────────────────────────────────────────
+    # Ingests EVERY mailbox message into MinIO (no sender filter).
+    gmail_raw_prefix: str = "gmail"
+    # Path layout. "flat" -> gmail/YYYY/MM/DD/ (single-mailbox POC).
+    # "account" -> gmail/<account_id>/YYYY/MM/DD/ (multi-mailbox).
+    gmail_raw_path_layout: str = "flat"  # flat | account
+    # Which date picks the YYYY/MM/DD folder.
+    # "received" -> the message's Gmail internalDate (stable across re-syncs).
+    # "ingested" -> wall clock at write time.
+    gmail_raw_partition_by: str = "received"  # received | ingested
+    # Handover doc sections 3/7/15: the Gmail message ID IS the object name.
+    # That makes the key fully derivable, so a HEAD on the path is the
+    # duplicate check and no tracking table is needed for correctness.
+    gmail_raw_object_pattern: str = "email_{message_id}.json"
+    # Attachment bytes are inlined base64. Above this size the attachment is
+    # recorded with metadata + sha256 but no bytes (truncated=true).
+    gmail_raw_max_attachment_bytes: int = 26_214_400  # 25 MiB
+    gmail_raw_include_spam_trash: bool = True
+    # Optional Gmail search filter for backfill. Empty = whole mailbox.
+    # Task 8 still drops system/bulk mail after fetch.
+    gmail_raw_query: str = ""
+    gmail_raw_page_size: int = 100
+    # Safety cap per run so one invocation cannot spin forever on a huge mailbox.
+    gmail_raw_max_per_run: int = 500
+    # Re-attempt ledger rows stuck in 'pending' after this many seconds.
+    gmail_raw_pending_retry_seconds: int = 300
+
+    # ── Offline fixtures (Task 9) ─────────────────────────────────────────────
+    # When true, get_client() returns a FixtureClient reading from
+    # gmail_fixtures_dir instead of calling Gmail. The demo, and the whole
+    # adapter test suite, then run with no network and no credentials.
+    use_gmail_fixtures: bool = False
+    gmail_fixtures_dir: str = "scout/gmail/fixtures"
+
+    # ── Gmail push (Cloud Pub/Sub) ────────────────────────────────────────────
+    # Optional. The 60s poller is the workhorse; push just triggers it sooner.
+    gmail_pubsub_topic: str = ""  # projects/<proj>/topics/<topic>
+    gmail_push_shared_secret: str = ""  # ?token= guard on the push endpoint
+    gmail_push_label_ids: str = ""  # comma-separated; empty = whole mailbox
 
     # ── Action mode ───────────────────────────────────────────────────────────
     # MVP Phase 1: recommendation only, nothing is dispatched.
     # Doc's exact spec (Task 3): env("ACTION_MODE", "draft_only")
     # values: "draft_only" | "gated_execute"
-    # CONFLICT: Rohan's earlier code used "DRY_RUN"/"LIVE" — confirm with
-    # him which convention wins before Task 22 (dispatch_write) is built.
+    # Resolved at merge: the doc's draft_only/gated_execute wins over the older
+    # DRY_RUN/LIVE, which this side had already removed. Task 22
+    # (dispatch_write) gates on these two values.
     action_mode: str = "draft_only"  # draft_only | gated_execute
 
     # ── Connections — Sutej ─────────────────────────────────────────────────────
-    database_url: str = "postgresql+psycopg://postgres:itr@localhost:5432/itr"
-    # MinIO — hosted on Oracle Cloud Compute VM (not local docker).
-    # Host:port only, no http:// — client picks http/https via minio_secure.
-    minio_endpoint: str = "140.245.252.42:9000"
-    minio_console_url: str = "http://140.245.252.42:9001"  # web console only
-    minio_access_key: str = ""
-    minio_secret_key: str = ""
-    minio_secure: bool = False  # True only once this endpoint is behind HTTPS
-    minio_bucket_raw: str = "raw"
+    # Port 5434, not 5432: infra/docker-compose.yml binds the itr container to
+    # 5434 because 5432 is already a native Postgres on this machine. Pointing
+    # here at 5432 does not fail — it silently connects to the wrong database.
+    # SQLAlchemy dialect form; psycopg3 callers want `database_dsn` below.
+    database_url: str = "postgresql+psycopg://postgres:itr@localhost:5434/itr"
+    # MinIO settings live in the raw-lake block above — one definition only.
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection_name: str = "itr360_chunks"  # Task 17 (index) — Qdrant collection for embedded chunks
 
@@ -134,6 +193,16 @@ class Settings(BaseSettings):
     redis_url: str = "redis://:itr_dev@localhost:6379/0"
 
     # ── Convenience properties ────────────────────────────────────────────────
+    @property
+    def database_dsn(self) -> str:
+        """`database_url` in a form psycopg3 and psql accept.
+
+        SQLAlchemy needs the `postgresql+psycopg://` dialect prefix; psycopg
+        rejects it outright (ProgrammingError) and so does psql. Strip the
+        driver so one setting serves both, rather than keeping two in sync.
+        """
+        return self.database_url.replace("postgresql+psycopg://", "postgresql://", 1)
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"

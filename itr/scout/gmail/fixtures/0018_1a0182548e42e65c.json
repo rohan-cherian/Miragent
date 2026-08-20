@@ -1,0 +1,63 @@
+{
+  "id": "1a0182548e42e65c",
+  "threadId": "1a0182548e42e65c",
+  "historyId": "180",
+  "originalHistoryId": "3661",
+  "internalDate": "1787111491000",
+  "labelIds": [
+    "SENT"
+  ],
+  "snippet": "This is a one-off test proving the Gmail token can send. Safe to ignore.",
+  "sizeEstimate": 656,
+  "payload": {
+    "partId": "",
+    "mimeType": "text/plain",
+    "filename": "",
+    "headers": [
+      {
+        "name": "Received",
+        "value": "from 524457179274 named unknown by gmailapi.google.com with HTTPREST; Tue, 18 Aug 2026 20:51:31 -0700"
+      },
+      {
+        "name": "Received",
+        "value": "from 524457179274 named unknown by gmailapi.google.com with HTTPREST; Tue, 18 Aug 2026 20:51:31 -0700"
+      },
+      {
+        "name": "To",
+        "value": "persona1@gmail.com"
+      },
+      {
+        "name": "Subject",
+        "value": "Scout send-scope test (Task 1)"
+      },
+      {
+        "name": "Content-Type",
+        "value": "text/plain; charset=\"utf-8\""
+      },
+      {
+        "name": "Content-Transfer-Encoding",
+        "value": "7bit"
+      },
+      {
+        "name": "MIME-Version",
+        "value": "1.0"
+      },
+      {
+        "name": "Date",
+        "value": "Tue, 18 Aug 2026 20:51:31 -0700"
+      },
+      {
+        "name": "Message-Id",
+        "value": "<CAEcWFvrah5VyTE0-KrpGhJ_0MdM1Eg=4m9koaJaV8J_9mD55aA@mail.gmail.com>"
+      },
+      {
+        "name": "From",
+        "value": "MotiveMinds Demo <motiveminds.itsupport@gmail.com>"
+      }
+    ],
+    "body": {
+      "size": 72,
+      "data": "VGhpcyBpcyBhIG9uZS1vZmYgdGVzdCBwcm92aW5nIHRoZSBHbWFpbCB0b2tlbiBjYW4gc2VuZC4gU2FmZSB0byBpZ25vcmUu"
+    }
+  }
+}

@@ -1,15 +1,24 @@
 """
-Phase 5–6 — Sync Gmail inbox → src_gmail.tickets (one run).
+Gmail -> MinIO raw bucket, one run.
+
+Writes every new message as raw/gmail/YYYY/MM/DD/email_NNN.json.
+Safe to run repeatedly — the ledger guarantees no message is written twice.
+
+Setup (first time):
+  poetry run python scripts/load_gmail_schema.py
+  poetry run python scripts/minio_smoke_test.py
 
 Usage:
-  poetry run python scripts/load_gmail_schema.py
   poetry run python scripts/gmail_sync_once.py
+  poetry run python scripts/gmail_sync_once.py --max 50
   poetry run python scripts/gmail_sync_once.py --list
+  poetry run python scripts/gmail_sync_once.py --backfill   # walk whole mailbox
 """
 
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -18,58 +27,72 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scout.config import settings
-from scout.gmail.auth import GmailTokenStore
-from scout.gmail.client import GmailClient
-from scout.gmail.store import GmailTicketStore
-from scout.gmail.sync import run_sync
-
-
-def _client() -> GmailClient:
-    return GmailClient(
-        client_id=settings.gmail_client_id,
-        client_secret=settings.gmail_client_secret,
-        token_store=GmailTokenStore(settings.gmail_token_path),
-        user_id="me",
-        refresh_token_fallback=settings.gmail_refresh_token,
-    )
+from scout.gmail.raw_ledger import GmailRawLedger
+from scout.gmail.sync import build_raw_sync
+from scout.raw.minio_client import RawLakeClient
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--list", action="store_true", help="List tickets after sync")
-    parser.add_argument("--max", type=int, default=100, help="Bootstrap max messages")
+    parser.add_argument("--max", type=int, default=None, help="Max messages this run")
+    parser.add_argument("--list", action="store_true", help="List recent ledger rows after sync")
+    parser.add_argument(
+        "--backfill",
+        action="store_true",
+        help="Keep running until the whole mailbox is ingested",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Debug logging")
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
 
     if not settings.gmail_client_id or not settings.gmail_client_secret:
         print("Missing GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET", file=sys.stderr)
         return 1
 
-    client = _client()
-    profile = client.get_profile()
-    mailbox = (profile.get("emailAddress") or settings.gmail_user or "me").strip()
-    store = GmailTicketStore(settings.gmail_database_url)
+    ledger = GmailRawLedger(settings.gmail_database_url)
+    ledger.ensure_schema()
 
-    result = run_sync(
-        client=client,
-        store=store,
-        mailbox=mailbox,
-        bootstrap_max=args.max,
-    )
-    print(
-        f"mailbox={result.mailbox} mode={result.mode} "
-        f"fetched={result.fetched} inserted={result.inserted} "
-        f"skipped_dupes={result.skipped_duplicates} "
-        f"skipped_non_customer={result.skipped_non_customer} "
-        f"history_id={result.history_id} "
-        f"total_tickets={store.count_tickets(mailbox)}"
-    )
+    lake = RawLakeClient()
+    lake.ensure_bucket()
+
+    sync = build_raw_sync(ledger=ledger, lake=lake)
+    if args.max is not None:
+        sync.max_per_run = args.max
+
+    print(f"Mailbox : {sync.account_id}")
+    print(f"Target  : {lake.endpoint}/{lake.bucket}/{sync.prefix}/YYYY/MM/DD/")
+
+    try:
+        rounds = 0
+        while True:
+            rounds += 1
+            result = sync.run()
+            print(f"[round {rounds}] {result.summary()}")
+            for err in result.errors[:5]:
+                print(f"    error: {err}", file=sys.stderr)
+            if not args.backfill:
+                break
+            if result.backfill_done or (result.written == 0 and result.failed == 0):
+                print(f"Backfill complete after {rounds} round(s).")
+                break
+    finally:
+        sync.client.close()
+
+    counts = ledger.counts(sync.account_id)
+    print(f"Ledger  : written={counts['written']} skipped={counts['skipped']}")
 
     if args.list:
-        for row in store.list_tickets(mailbox, limit=20):
+        for row in ledger.recent(sync.account_id, limit=20):
             print(
-                f"  #{row['ticket_id']}  {row['gmail_message_id']}  "
-                f"{row['subject']!r}  from={row['from_address']}"
+                f"  {row['object_key']}  {row['size_bytes'] or 0} bytes  "
+                f"att={row['attachment_count']}"
             )
+        for row in ledger.recent_skips(sync.account_id, limit=10):
+            print(f"  SKIPPED {row['gmail_message_id']}  {row['reason']}: {row['detail']}")
     return 0
 
 

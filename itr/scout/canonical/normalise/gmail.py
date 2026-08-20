@@ -10,16 +10,14 @@ googleapiclient — that's the whole point of the layering rule Task 4
 enforces (tests/test_layering.py). It only ever sees rows handed to
 it, shaped like src_gmail.message.
 
-ASSUMPTION: src_gmail.message is Task 5's re-grain of the Gmail
-source data (Rohan's side) and does not exist yet in this workspace
-as of writing this module. The column names below are the assumed
-contract from the Task 13 spec, not verified against a live table:
-message_id, thread_id, from_email, from_display_name, to_emails,
-subject, body_text, internal_date_ms, connector_run_id. Only
-message_id, subject, body_text, internal_date_ms, and connector_run_id
-are actually used here — the rest (thread_id, from_email,
-from_display_name, to_emails) belong to Task 14's identity resolution,
-not this module.
+Column names CONFIRMED against schema/003_src_gmail_regrain.sql
+(Rohan's Task 5, now merged): external_id (the Gmail messageId —
+"= DEDUP KEY" per the schema comment), thread_id (uuid FK into
+src_gmail.thread — an internal stable identifier, NOT Gmail's
+threadId string, which lives at thread.external_id), subject,
+body_text, internal_date_ms, connector_run_id, from_address /
+from_display_name / signature_block (read by Task 14's waterfall,
+not here).
 """
 
 from __future__ import annotations
@@ -39,10 +37,17 @@ SOURCE_SYSTEM = "gmail"
 # every direct field correspondence lives here, never as inline
 # if/elif comparisons in normalise_message() below.
 FIELD_MAP: dict[str, str] = {
-    "src_message_id": "external_id",  # pointer back into src_gmail.message
+    "src_message_id": "external_id",  # the Gmail messageId — schema/003's dedup key
     "subject": "subject",
-    "thread_id": "thread_id",  # Task 15's threading.find_case_by_thread_id relies on this
 }
+# thread_id is NOT in FIELD_MAP: the source value is a uuid (FK into
+# src_gmail.thread) while itr360.message.thread_id is Text, so it is a
+# CONVERTED field (str-cast) in the update block below, like sent_at.
+# Using the internal thread uuid as the correlation grouping key is
+# deliberate: Task 15 needs a stable per-thread key, not Gmail's literal
+# threadId string — and the uuid is stable by construction (documented
+# decision; join to src_gmail.thread.external_id only if a future
+# consumer needs the literal Gmail value).
 
 # Canonical columns NOT covered by FIELD_MAP, and why:
 #   body_redacted / pii_map / pii_status  -> derived from redact(body_text), not a direct copy
@@ -95,6 +100,9 @@ def normalise_message(src_row: Mapping[str, Any]) -> dict[str, Any]:
             "pii_map": redaction.pii_map,
             "pii_status": redaction.status,
             "sent_at": sent_at,
+            "thread_id": (
+                str(src_row["thread_id"]) if src_row.get("thread_id") else None
+            ),
             "tenant_id": uuid.UUID(str(settings.tenant_id)),
             "source_system": SOURCE_SYSTEM,
             "external_id": str(source_message_id),

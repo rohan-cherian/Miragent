@@ -52,6 +52,8 @@ qdrant-client = "^1.19.0"
 # DEV-ONLY DEPENDENCIES
 # Never installed in production images
 # ─────────────────────────────────────────────────────────
+openpyxl = "^3.1.5"
+pyyaml = "^6.0.3"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
 pytest-asyncio = "^0.23"

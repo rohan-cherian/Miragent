@@ -1,0 +1,37 @@
+{
+  "CFG-09": [
+    "our licence keys stopped working after we renewed",
+    "INVALID_LICENSE_KEY error on activation",
+    "we paid for the add-on but it's still greyed out for us",
+    "the feature we upgraded for isn't showing up anywhere in the account"
+  ],
+  "ACC-09": [
+    "we just moved offices and now the API is blocking every request from our new IP",
+    "getting a network restriction error, nothing changed on our end except our office IP",
+    "our requests are being rejected, I think we're not on the allowlist anymore",
+    "VPN / proxy change and now we can't reach the API at all"
+  ],
+  "BIL-02": [
+    "this invoice is charging us for way more seats than we actually have",
+    "the amount on this month's invoice doesn't match what we agreed to",
+    "why does our bill show a full month when we cancelled halfway through",
+    "there's a line item on here I don't recognize at all"
+  ],
+  "BIL-07": [
+    "we want to cancel before the auto-renewal hits next month",
+    "nobody told us this was going to auto-renew, we need this stopped",
+    "can we renegotiate the terms before this renews automatically",
+    "please turn off auto-renew on our account before the next billing cycle"
+  ],
+  "ACC-03": [
+    "the password reset email never showed up, checked spam too",
+    "I've requested a reset link three times and nothing arrives",
+    "reset email isn't coming through, is our domain blocked somehow"
+  ],
+  "API-01": [
+    "our API calls are all returning 401 now, nothing changed on our side",
+    "getting a 403 forbidden on an endpoint that used to work fine",
+    "the OAuth token we're using keeps getting rejected as invalid",
+    "API key seems to have stopped authenticating overnight"
+  ]
+}

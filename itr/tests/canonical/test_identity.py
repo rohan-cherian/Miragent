@@ -67,11 +67,11 @@ def test_verified_alias_resolves_confidently():
         audit_before = _count_identity_audit_rows(session)
 
     src_message = {
-        "from_email": email,
+        "from_address": email,
         "from_display_name": "Test Sender",
         "thread_id": f"test-thread-{uuid.uuid4()}",
         "signature_block": None,
-        "message_id": f"test-msg-{uuid.uuid4()}",
+        "external_id": f"test-msg-{uuid.uuid4()}",
     }
     run = Run(connector_run_id=uuid.uuid4(), is_synthetic=True)
 
@@ -93,11 +93,11 @@ def test_unmatched_email_queues_for_review():
 
     unknown_email = f"nobody-{uuid.uuid4()}@example.com"
     src_message = {
-        "from_email": unknown_email,
+        "from_address": unknown_email,
         "from_display_name": "Totally Unknown Sender",
         "thread_id": f"test-thread-{uuid.uuid4()}",
         "signature_block": None,
-        "message_id": f"test-msg-{uuid.uuid4()}",
+        "external_id": f"test-msg-{uuid.uuid4()}",
     }
     run = Run(connector_run_id=uuid.uuid4(), is_synthetic=True)
 

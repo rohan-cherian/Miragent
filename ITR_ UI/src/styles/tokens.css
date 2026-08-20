@@ -1,0 +1,95 @@
+/* ITR design tokens — Spec §7.2–7.6. Hex values are the implementation truth.
+   Pantone references live in the design appendix, never in code.
+   Light mode only for the POC (§7.1). Do not add a second brand accent hue. */
+
+:root {
+  /* --- Surfaces & structure (§7.2) --- */
+  --surface-0: #FFFFFF;   /* page background */
+  --surface-1: #FAFAFB;   /* panel background */
+  --surface-2: #F2F2F5;   /* table stripe, wells */
+  --border:    #D9D9DE;   /* hairlines */
+
+  /* --- Ink ramp --- */
+  --ink-900: #111114;     /* primary text */
+  --ink-600: #4A4A52;     /* secondary text */
+  --ink-400: #7C7C86;     /* tertiary / disabled text */
+
+  /* --- Single brand primary: deep purple [A-04] --- */
+  --primary-700: #3B1E6E; /* primary actions, active nav */
+  --primary-600: #4C2A8C; /* primary hover, links */
+  --primary-100: #ECE6F7; /* selected row wash — NEVER in charts */
+
+  /* --- Status semantics (not brand accents) --- */
+  --success-700: #0F5132;
+  --warning-700: #7A4E00;
+  --danger-700:  #7F1D1D;
+  --info-700:    #1E3A5F;
+
+  /* --- Emulated badge (icon + label, never colour alone) [F-121] --- */
+  --emulated-700: #5B21B6;
+  --emulated-bg:  #EDE9FE;
+
+  /* --- Status washes (derived tints, UI chrome only — never chart fills) --- */
+  --success-bg: #E8F1EC;
+  --warning-bg: #F6EFE2;
+  --danger-bg:  #F6E9E9;
+  --info-bg:    #E7ECF2;
+
+  /* --- Chart series: dark, saturated only. No pastels, no gradients (§7.2) ---
+     Slot order is re-sequenced from the §7.2 table to maximise adjacent-pair
+     separation under CVD simulation — the hex set is unchanged. See LANE_NOTES
+     "chart palette" for the validator output that motivated the re-sequence.
+     Every chart still ships legend + direct labels + view-as-table (§7.6). */
+  --chart-1: #3B1E6E;  /* purple  */
+  --chart-2: #0F5132;  /* green   */
+  --chart-3: #7A4E00;  /* amber   */
+  --chart-4: #1E3A5F;  /* navy    */
+  --chart-5: #7F1D1D;  /* red     */
+  --chart-6: #111114;  /* black   */
+  --chart-grid: #E4E4E9;
+
+  /* --- Type (§7.3) --- */
+  --font: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --fs-caption: 12px;   /* caption / meta */
+  --fs-table:   13px;   /* table body */
+  --fs-body:    14px;
+  --fs-panel:   16px;   /* panel title */
+  --fs-page:    20px;   /* page title */
+  --fs-kpi:     28px;   /* dashboard KPI */
+  --lh-body: 1.45;
+  --lh-head: 1.2;
+
+  /* --- Space (§7.4) --- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* --- Radius (§7.4): 6px controls, 10px cards, 0 tables --- */
+  --r-control: 6px;
+  --r-card: 10px;
+  --r-table: 0;
+
+  /* --- Elevation (§7.4) --- */
+  --elev-1: 0 1px 3px rgba(17, 17, 20, .08);
+  --elev-2: 0 8px 24px rgba(17, 17, 20, .16);
+
+  /* --- Density (§7.5). Default = analyst surfaces (S-04..S-08). --- */
+  --row-h: 36px;
+  --density-fs: 13px;
+  --gutter: 12px;
+
+  /* --- Shell metrics (§10.1) --- */
+  --topbar-h: 56px;
+  --nav-w: 240px;
+  --nav-w-rail: 64px;
+  --panel-w: 480px;
+  --panel-w-wide: 640px;
+
+  --focus-ring: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--primary-600);
+}
+
+/* Manager surfaces run looser (§7.5): S-03 dashboard, S-11 digest. */
+.density-manager {
+  --row-h: 44px;
+  --density-fs: 14px;
+  --gutter: 24px;
+}

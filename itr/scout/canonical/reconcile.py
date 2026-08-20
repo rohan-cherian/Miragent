@@ -8,12 +8,17 @@ src_<source_system> table and itr360.message rows tagged with that
 source_system. Anything less than 100% completeness is a FAILURE, not
 a warning — no tolerance threshold here, by design.
 
-ASSUMPTION: src_gmail (Rohan's side, Tasks 5-9) may not exist yet in
-this workspace. reconcile("gmail") will raise a natural "relation does
-not exist" error at the source-count/checksum step if so — expected,
-not something this module papers over. No src_gmail.attachment-style
-table exists anywhere in this codebase yet, so 'attachment' is a TODO,
-not reconciled here.
+BLOCKED ON: src_gmail.message, Rohan's Task 5 (Gmail connector
+"re-grain"), which does not exist yet in this workspace as of writing
+this module — same upstream dependency scripts/ingest_canonical.py's
+docstring documents. reconcile("gmail") will raise a natural
+"relation does not exist" error at the source-count/checksum step
+(_reconcile_message() below) until Task 5 lands. That failure is
+expected and correct — the logic here is done; it is only the
+upstream table that is missing — not a bug in this module and not
+something to work around with a try/except, fallback, or mock data.
+No src_gmail.attachment-style table exists anywhere in this codebase
+yet either, so 'attachment' is a TODO, not reconciled here.
 
 Must never import scout.gmail, scout.connectors, or googleapiclient
 (tests/test_layering.py, Task 4).
@@ -85,6 +90,10 @@ def _checksum(pairs: list[tuple]) -> str:
 
 
 def _reconcile_message(session: Session, source_system: str) -> ObjectDelta:
+    # For source_system="gmail" this resolves to src_gmail.message, which
+    # is blocked on Rohan's Task 5 (see module docstring) — the SELECT
+    # below is expected to raise "relation does not exist" until that
+    # table lands. That is correct, documented behaviour, not a bug here.
     source_table = f"src_{source_system}.message"
 
     source_count = session.execute(text(f"SELECT count(*) FROM {source_table}")).scalar_one()

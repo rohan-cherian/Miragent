@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
-
 from scout.config import settings
 from scout.context import trust as trust_module
 from scout.context.trust import trust_filter
@@ -84,6 +82,40 @@ def test_org_tag_mismatch_within_same_tenant_is_restricted():
 
 
 def test_internal_error_fails_closed_to_empty_list_and_does_not_raise(monkeypatch):
+    """A failure in the FILTERING logic itself fails closed to []."""
+    hit = _hit(score=0.99, acl_tags=[TENANT_A])
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("ACL check exploded")
+
+    monkeypatch.setattr(trust_module, "_acl_allows", _boom)
+    monkeypatch.setattr(trust_module.audit, "write", lambda **kw: None)
+
+    result = trust_filter([hit], acl_tags=[TENANT_A])
+
+    assert result == []
+
+
+def test_malformed_payload_fails_closed_to_empty_list(monkeypatch, caplog):
+    """The concrete malformed-input vector: a payload with no acl_tags key
+    raises inside the filtering block -> fail closed, and (per the Task 18
+    spec) the failure is logged."""
+    monkeypatch.setattr(trust_module.audit, "write", lambda **kw: None)
+    good = _hit(score=0.99, acl_tags=[TENANT_A])
+    bad = _hit(score=0.99, acl_tags=[TENANT_A])
+    bad["payload"] = {"message_id": bad["payload"]["message_id"]}  # no acl_tags
+
+    with caplog.at_level("ERROR"):
+        result = trust_filter([good, bad], acl_tags=[TENANT_A])
+
+    assert result == [], "one malformed hit poisons the batch — never a partial leak"
+    assert any("failing closed" in record.message for record in caplog.records)
+
+
+def test_audit_write_failure_does_not_discard_valid_filtering_results(monkeypatch, caplog):
+    """THE decoupling fix: an audit-logging failure is not a governance
+    failure. The correctly-filtered results are returned anyway, with a
+    warning — never [] (the old behaviour this test replaces)."""
     hit = _hit(score=0.99, acl_tags=[TENANT_A])
 
     def _boom(*args, **kwargs):
@@ -91,6 +123,45 @@ def test_internal_error_fails_closed_to_empty_list_and_does_not_raise(monkeypatc
 
     monkeypatch.setattr(trust_module.audit, "write", _boom)
 
-    result = trust_filter([hit], acl_tags=[TENANT_A])
+    with caplog.at_level("WARNING"):
+        result = trust_filter([hit], acl_tags=[TENANT_A])
 
-    assert result == []
+    assert len(result) == 1, "valid filtering output must survive an audit hiccup"
+    assert result[0]["access_status"] == "ok"
+    assert any("audit row could not be written" in record.message for record in caplog.records)
+
+
+def test_fail_closed_path_still_attempts_an_audit_row(monkeypatch):
+    """When filtering fails closed, an audit row noting the failure is still
+    attempted — and its own failure cannot cascade (return stays [])."""
+    written: list[dict] = []
+    monkeypatch.setattr(trust_module, "_acl_allows",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(trust_module.audit, "write", lambda **kw: written.append(kw))
+
+    hit = _hit(score=0.99, acl_tags=[TENANT_A])
+    assert trust_filter([hit], acl_tags=[TENANT_A]) == []
+    assert written and written[0]["outputs"]["failed_closed"] is True
+    assert written[0]["outputs"]["output_count"] == 0
+
+    # ...and even if THAT audit write raises too, the return is still [].
+    monkeypatch.setattr(trust_module.audit, "write",
+                        lambda **kw: (_ for _ in ()).throw(RuntimeError("also down")))
+    assert trust_filter([hit], acl_tags=[TENANT_A]) == []
+
+
+def test_happy_path_writes_one_audit_row_with_counts(monkeypatch):
+    written: list[dict] = []
+    monkeypatch.setattr(trust_module.audit, "write", lambda **kw: written.append(kw))
+
+    hits = [
+        _hit(score=0.99, acl_tags=[TENANT_A]),           # ok
+        _hit(score=0.99, acl_tags=[TENANT_B]),           # restricted
+        _hit(score=settings.retrieval_floor - 0.01, acl_tags=[TENANT_A]),  # dropped
+    ]
+    result = trust_filter(hits, acl_tags=[TENANT_A])
+
+    assert len(result) == 2
+    assert len(written) == 1, "one audit row per call, not per chunk"
+    outputs = written[0]["outputs"]
+    assert outputs == {"input_count": 3, "output_count": 2, "restricted_count": 1}

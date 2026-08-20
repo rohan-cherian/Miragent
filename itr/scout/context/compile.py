@@ -31,7 +31,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from scout.canonical.models import Message
+from scout.canonical.models import KBArticle, Message
 from scout.config import settings
 from scout.context.retrieve import retrieve
 from scout.context.trust import trust_filter
@@ -46,6 +46,12 @@ _SOURCE_SYSTEM = "gmail"
 # email in this system is conceptually a ticket comment. Documented here
 # since the spec doesn't pin this mapping down.
 _SOURCE_TYPE = "comment"
+
+# KB articles (scout/context/kb_index.py) are indexed into the same
+# collection with payload["source_system"] == "kb_article". They are the
+# one case where the OpenAPI source_type enum has an exact fit: "article".
+_KB_SOURCE_SYSTEM = "kb_article"
+_KB_SOURCE_TYPE = "article"
 
 # Mirrors embed.py's own private token-estimate convention (chars / 4);
 # redefined locally since embed.py's constant isn't exported and Part 3
@@ -72,6 +78,43 @@ def _estimate_tokens(text: str) -> int:
     if not text:
         return 0
     return max(1, len(text) // _CHARS_PER_TOKEN)
+
+
+def _lookup_kb_observed_at(article_ids: set[str]) -> dict[str, datetime]:
+    """Batched, read-only lookup of itr360.kb_article.observed_at by id.
+
+    KB points carry the article id in payload["kb_article_id"] (and, for
+    payload-shape compatibility, in payload["message_id"] too — see
+    kb_index.py). Their timestamp lives on kb_article, not itr360.message,
+    so they are resolved here rather than in _lookup_sent_at.
+    """
+    if not article_ids:
+        return {}
+
+    parsed_ids: list[uuid.UUID] = []
+    for aid in article_ids:
+        try:
+            parsed_ids.append(uuid.UUID(str(aid)))
+        except (ValueError, TypeError):
+            continue
+    if not parsed_ids:
+        return {}
+
+    engine = _get_engine()
+    with Session(engine) as session:
+        rows = session.execute(
+            select(KBArticle.id, KBArticle.observed_at).where(KBArticle.id.in_(parsed_ids))
+        ).all()
+    return {str(row.id): row.observed_at for row in rows}
+
+
+def _is_kb_hit(hit: dict) -> bool:
+    return ((hit.get("payload") or {}).get("source_system")) == _KB_SOURCE_SYSTEM
+
+
+def _kb_article_id(hit: dict) -> str | None:
+    payload = hit.get("payload") or {}
+    return payload.get("kb_article_id") or payload.get("message_id")
 
 
 def _lookup_sent_at(message_ids: set[str]) -> dict[str, datetime]:
@@ -158,19 +201,36 @@ class ContextPack:
     trust_filtered: bool
 
 
-def _to_citation(hit: dict, sent_at_by_message_id: dict[str, datetime]) -> Citation:
+def _to_citation(
+    hit: dict,
+    sent_at_by_message_id: dict[str, datetime],
+    observed_at_by_kb_article_id: dict[str, datetime] | None = None,
+) -> Citation:
     payload = hit.get("payload") or {}
     message_id = payload.get("message_id")
     child_text = payload.get("child_text") or ""
-    source_ts = sent_at_by_message_id.get(str(message_id)) if message_id else None
+
+    if _is_kb_hit(hit):
+        # KB article: timestamp from itr360.kb_article, source_type "article",
+        # deep link into the KB rather than Gmail. Everything else is shared.
+        article_id = _kb_article_id(hit)
+        source_ts = (observed_at_by_kb_article_id or {}).get(str(article_id)) if article_id else None
+        source_system = _KB_SOURCE_SYSTEM
+        source_type = _KB_SOURCE_TYPE
+        deep_link = f"kb://article/{article_id}" if article_id else ""
+    else:
+        source_ts = sent_at_by_message_id.get(str(message_id)) if message_id else None
+        source_system = _SOURCE_SYSTEM
+        source_type = _SOURCE_TYPE
+        deep_link = f"https://mail.google.com/mail/u/0/#all/{message_id}" if message_id else ""
 
     return Citation(
-        source_system=_SOURCE_SYSTEM,
-        source_type=_SOURCE_TYPE,
+        source_system=source_system,
+        source_type=source_type,
         object_id=str(message_id) if message_id else str(hit.get("chunk_id")),
         excerpt=child_text,
         source_ts=source_ts,
-        deep_link=f"https://mail.google.com/mail/u/0/#all/{message_id}" if message_id else "",
+        deep_link=deep_link,
         access_status=hit.get("access_status", "ok"),
         relevance=hit.get("score"),
         chunk_id=hit.get("chunk_id"),
@@ -206,17 +266,24 @@ def compile(
     ok_hits = [h for h in filtered if h.get("access_status") == "ok"]
     ok_hits.sort(key=lambda h: h.get("score", 0.0), reverse=True)
 
+    # Email hits resolve their timestamp from itr360.message; KB hits from
+    # itr360.kb_article. Split by payload["source_system"] so an article id
+    # is never looked up against the message table (and vice versa).
     message_ids = {
         str(h["payload"]["message_id"])
         for h in ok_hits
-        if (h.get("payload") or {}).get("message_id")
+        if not _is_kb_hit(h) and (h.get("payload") or {}).get("message_id")
+    }
+    kb_article_ids = {
+        str(_kb_article_id(h)) for h in ok_hits if _is_kb_hit(h) and _kb_article_id(h)
     }
     sent_at_by_message_id = _lookup_sent_at(message_ids)
+    observed_at_by_kb_article_id = _lookup_kb_observed_at(kb_article_ids)
 
     citations: list[Citation] = []
     token_count = 0
     for hit in ok_hits:
-        citation = _to_citation(hit, sent_at_by_message_id)
+        citation = _to_citation(hit, sent_at_by_message_id, observed_at_by_kb_article_id)
         citation_tokens = _estimate_tokens(citation.excerpt)
         if token_count + citation_tokens > budget:
             break  # next citation would exceed budget — stop, never truncate

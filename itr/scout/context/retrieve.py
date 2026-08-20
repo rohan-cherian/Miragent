@@ -8,7 +8,9 @@ changing.
 
 This is a seam, not a stage: retrieve() returns raw hits — chunk_id,
 score, payload — with no ranking, filtering, or scoring logic of its
-own. scout.context.trust and scout.context.compile own everything
+own. The one piece of query-shape logic it owns is the case-OR-KB
+scoping in _build_acl_filter, so that tenant-wide KB articles are
+retrievable alongside a case's own messages. scout.context.trust and scout.context.compile own everything
 downstream of the vector search itself.
 
 scout.context.embed.search() takes a query VECTOR (list[float]), not
@@ -28,17 +30,47 @@ from typing import Any
 
 from scout.context.embed import embed_query, search
 
+# Payload value written by scout/context/kb_index.py for every KB point.
+# Kept in sync by tests/context/test_kb_index.py.
+KB_SOURCE_SYSTEM = "kb_article"
+
+
+def _tenant_tags(acl_tags: list[str] | None) -> list[str]:
+    return [tag for tag in (acl_tags or []) if tag.startswith("tenant:")]
+
 
 def _build_acl_filter(
     acl_tags: list[str] | None, case_id: uuid.UUID | None
 ) -> dict[str, Any] | None:
     """{field: value_or_list} shape search() expects — a list value becomes
-    MatchAny, a scalar becomes MatchValue (see embed.py's _build_acl_filter)."""
+    MatchAny, a scalar becomes MatchValue (see embed.py's _build_acl_filter).
+
+    Case scoping is an OR, not a hard AND:
+
+        acl_tags match
+        AND ( case_id == <this case>
+              OR ( source_system == "kb_article" AND acl_tags match tenant ) )
+
+    Email chunks carry a case_id; KB article chunks carry case_id=None and
+    are tenant-wide. A bare ``case_id`` MatchValue would exclude every KB
+    point server-side, which is exactly what happened before this change —
+    the KB index was unreachable from any real compile() call. Expressed via
+    embed._build_acl_filter's ``"$should"`` key.
+    """
     filter_dict: dict[str, Any] = {}
     if acl_tags:
         filter_dict["acl_tags"] = list(acl_tags)
+
     if case_id is not None:
-        filter_dict["case_id"] = str(case_id)
+        kb_group: dict[str, Any] = {"source_system": KB_SOURCE_SYSTEM}
+        tenant_tags = _tenant_tags(acl_tags)
+        if tenant_tags:
+            kb_group["acl_tags"] = tenant_tags
+        filter_dict["$should"] = [
+            {"case_id": str(case_id)},
+            kb_group,
+        ]
+
     return filter_dict or None
 
 

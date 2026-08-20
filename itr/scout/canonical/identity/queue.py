@@ -10,18 +10,21 @@ googleapiclient (tests/test_layering.py, Task 4).
 
 from __future__ import annotations
 
+import logging
 import uuid
 from contextlib import nullcontext
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from scout.canonical.models import IdentityUnresolvedQueue, Person, PersonEmailAlias
+from scout.canonical.models import Case, IdentityUnresolvedQueue, Message, Person, PersonEmailAlias
 from scout.canonical.normalise.gmail import SOURCE_SYSTEM
 from scout.config import settings
 from scout.governance.audit import write as audit_write
+
+logger = logging.getLogger(__name__)
 
 TENANT_ID = uuid.UUID(str(settings.tenant_id))
 
@@ -68,7 +71,7 @@ def put(
     Leave it unset to have put() open, commit, and close its own
     session — the default when called standalone.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     row_id = uuid.uuid4()
 
     row = IdentityUnresolvedQueue(
@@ -125,11 +128,59 @@ def list_pending() -> list[IdentityUnresolvedQueue]:
     return list(rows)
 
 
+def _retrolink_cases(session: Session, sender_email, person_id: uuid.UUID):
+    """Point requester-less cases created for this sender at the now-known person.
+
+    Sender attribution path (the only one queryable today — see the call
+    site's comment): identity_unresolved_queue rows for sender_email give
+    src_message_ids; itr360.message.src_message_id joins them to cases.
+    Cases with a non-null requester_id are left untouched. Returns
+    [(case_id, previously_unresolved_since)] for the caller to audit —
+    previously_unresolved_since is the earliest queue-row created_at for
+    this sender (when the system first knew it did not know who this was).
+    """
+    queue_rows = session.execute(
+        select(IdentityUnresolvedQueue.src_message_id, IdentityUnresolvedQueue.created_at)
+        .where(
+            IdentityUnresolvedQueue.tenant_id == TENANT_ID,
+            IdentityUnresolvedQueue.sender_email == sender_email,
+        )
+    ).all()
+    src_message_ids = {row.src_message_id for row in queue_rows if row.src_message_id}
+    if not src_message_ids:
+        return []
+    unresolved_since = min(
+        (row.created_at for row in queue_rows if row.created_at), default=None
+    )
+
+    case_ids = {
+        row[0]
+        for row in session.execute(
+            select(Message.case_id).where(Message.src_message_id.in_(src_message_ids))
+        ).all()
+    }
+    if not case_ids:
+        return []  # normal outcome — e.g. messages not yet persisted to canonical
+
+    retrolinked = []
+    cases = session.execute(
+        select(Case).where(
+            Case.id.in_(case_ids),
+            Case.tenant_id == TENANT_ID,
+            Case.requester_id.is_(None),  # never overwrite an existing resolution
+        )
+    ).scalars().all()
+    for case in cases:
+        case.requester_id = person_id
+        retrolinked.append((case.id, unresolved_since))
+    return retrolinked
+
+
 def resolve_as_candidate(queue_id: uuid.UUID, person_id: uuid.UUID, actor: str) -> None:
     """Confirm a queued sender as an existing person: closes the queue
     row and writes a new verified alias for that sender_email."""
     engine = _get_engine()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     with Session(engine) as session:
         queue_row = _get_queue_row(session, queue_id)
@@ -161,11 +212,15 @@ def resolve_as_candidate(queue_id: uuid.UUID, person_id: uuid.UUID, actor: str) 
         )
         session.add(alias)
 
-        # TODO Task 15: retro-link every itr360.case_ row whose
-        # requester_id is still null but whose messages came from
-        # queue_row.sender_email, once case correlation actually
-        # populates case_.requester_id. Nothing queryable to
-        # retro-link against yet in this workspace.
+        # Task 15 retro-link (the long-standing TODO, now implementable —
+        # correlation.py populates case_.requester_id, and Task 13's wired
+        # ingest creates real cases). itr360.message carries NO sender-email
+        # column, so sender attribution goes through this sender's OWN
+        # identity_unresolved_queue rows: every queue row for sender_email
+        # names a src_message_id; itr360.message.src_message_id joins those
+        # to their cases. Only cases whose requester_id is still NULL are
+        # touched — an existing resolution is never overwritten.
+        retrolinked = _retrolink_cases(session, queue_row.sender_email, person_id)
 
         session.commit()
 
@@ -174,14 +229,38 @@ def resolve_as_candidate(queue_id: uuid.UUID, person_id: uuid.UUID, actor: str) 
         action="identity_queue_resolved",
         category="identity",
         inputs={"queue_id": str(queue_id), "person_id": str(person_id)},
-        outputs={"alias_created": True},
+        outputs={"alias_created": True, "cases_retrolinked": len(retrolinked)},
     )
+
+    # One case_retrolinked row PER case, written after commit (this module's
+    # established ordering), each guarded so an audit-backend failure warns
+    # and never unwinds the committed retro-link (trust.py's pattern).
+    for case_id, unresolved_since in retrolinked:
+        try:
+            audit_write(
+                actor=actor,
+                action="case_retrolinked",
+                category="identity",
+                case_id=case_id,
+                outputs={
+                    "person_id": str(person_id),
+                    "previously_unresolved_since": (
+                        unresolved_since.isoformat() if unresolved_since else None
+                    ),
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 — logging failure must not cascade
+            logger.warning(
+                "resolve_as_candidate: case_retrolinked audit row for case %s "
+                "could not be written (%s: %s) — retro-link itself is committed.",
+                case_id, type(exc).__name__, exc,
+            )
 
 
 def mark_as_new_actor(queue_id: uuid.UUID, display_name: str, actor: str) -> uuid.UUID:
     """Enrol a queued sender as a brand-new person, with a verified alias."""
     engine = _get_engine()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     with Session(engine) as session:
         queue_row = _get_queue_row(session, queue_id)

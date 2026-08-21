@@ -41,7 +41,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from scout.api.deps import get_db_session
-from scout.api.schemas import RunStage, Run
+from scout.api.schemas import Run, RunStage
 from scout.canonical.models import Quarantine
 
 router = APIRouter()
@@ -51,27 +51,32 @@ _COLUMNS = (
     "messages_seen, messages_written, messages_skipped, errors"
 )
 
-_LIST_SQL = f"""
+_LIST_SQL_BASE = f"""
     SELECT {_COLUMNS}
     FROM raw_ingest.runs
-    -- CASTs are required: an untyped NULL bind leaves Postgres unable to
-      -- infer the parameter type (AmbiguousParameter) and the query 500s.
-      WHERE (CAST(:source_system AS text) IS NULL OR source_system = :source_system)
-      AND (CAST(:status AS text) IS NULL OR status = :status)
-    ORDER BY started_at DESC
+    WHERE true
 """
 
+# id is bound as a str, not a uuid.UUID: with a raw text() statement (no
+# SQLAlchemy column typing) psycopg can't adapt a bare UUID object, and
+# raises "can't adapt type 'UUID'". CAST(:id AS uuid) on the SQL side lets
+# Postgres do the conversion instead — the same convention
+# scripts/ingest_canonical.py already uses for CAST(:thread_id AS uuid).
+# Task 24 requires GET /runs/{id} to carry "the seven stages with progress,
+# per-stage duration and log lines" — that is what drives the console's
+# Pipeline Scan bars and mini-logs, so it is read on the detail route.
 _STAGES_SQL = """
     SELECT stage, progress_pct, log_line, duration_ms, created_at
     FROM raw_ingest.run_stage_event
-    WHERE run_id = :id
+    WHERE run_id = CAST(:id AS uuid)
     ORDER BY id
 """
+
 
 _GET_SQL = f"""
     SELECT {_COLUMNS}
     FROM raw_ingest.runs
-    WHERE id = :id
+    WHERE id = CAST(:id AS uuid)
 """
 
 # DB status -> contract RunStatus (see module docstring; partial is lossy).
@@ -116,9 +121,24 @@ def list_runs(
     session: Session = Depends(get_db_session),
 ) -> Any:
     db_status = _CONTRACT_TO_DB_STATUS.get(status, status) if status else None
-    rows = session.execute(
-        text(_LIST_SQL), {"source_system": source_system, "status": db_status}
-    ).mappings().all()
+
+    # Built dynamically rather than `(:param IS NULL OR col = :param)`:
+    # binding a bare NULL through that pattern leaves Postgres unable to
+    # infer the parameter's type ("could not determine data type of
+    # parameter $1") when the filter isn't supplied. Appending a clause
+    # only when its filter is actually set means every bound parameter is
+    # always a real, typed value.
+    clauses = []
+    params: dict[str, Any] = {}
+    if source_system is not None:
+        clauses.append("source_system = :source_system")
+        params["source_system"] = source_system
+    if db_status is not None:
+        clauses.append("status = :status")
+        params["status"] = db_status
+
+    sql = _LIST_SQL_BASE + "".join(f" AND {c}" for c in clauses) + " ORDER BY started_at DESC"
+    rows = session.execute(text(sql), params).mappings().all()
     return [_to_run(row) for row in rows]
 
 
@@ -127,13 +147,12 @@ def get_run(
     id: uuid.UUID,  # noqa: A002 — contract PathRunId
     session: Session = Depends(get_db_session),
 ) -> Any:
-    row = session.execute(text(_GET_SQL), {"id": id}).mappings().first()
+    row = session.execute(text(_GET_SQL), {"id": str(id)}).mappings().first()
     if row is None:
         raise HTTPException(status_code=404, detail="run not found")  # contract 404
     run = _to_run(row)
-    # The seven stages the doc requires on the detail route.
-    stages = session.execute(text(_STAGES_SQL), {"id": id}).mappings().all()
-    run.stages = [RunStage(**dict(stage_row)) for stage_row in stages]
+    stages = session.execute(text(_STAGES_SQL), {"id": str(id)}).mappings().all()
+    run.stages = [RunStage(**dict(r)) for r in stages]
     return run
 
 

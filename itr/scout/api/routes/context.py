@@ -77,11 +77,45 @@ def get_case_context_pack(
 
     # Bridge: summary + generated_at are required by the contract but absent
     # from Task 18's dataclass — composed here, forwarded once Task 18 has them.
+    #
+    # Finding 1 fix: low_context fires for ANY cause of an empty pack, so
+    # a fixed "nothing cleared the retrieval floor" string was actively
+    # misleading — it sent a prior investigation chasing retrieval scores
+    # when the actual cause was a governance-layer withhold. Distinguish
+    # the layer the next investigation should start in:
+    #   - retrieved_count == 0            -> nothing came back from retrieve()
+    #   - citation_coverage == 0.0        -> hits were ok, but the token
+    #                                        budget excluded every one of them
+    #                                        (citation_coverage defaults to
+    #                                        1.0 only when there were zero ok
+    #                                        hits to cover — see compile.py)
+    #   - trust_filtered                  -> hits arrived but were withheld
+    #                                        by the ACL check or isolated as
+    #                                        malformed (see trust.py)
+    #   - otherwise                       -> hits arrived, none cleared
+    #                                        settings.retrieval_floor (or, in
+    #                                        the rare unrecoverable case,
+    #                                        trust_filter failed closed —
+    #                                        that path always also logs via
+    #                                        logger.exception in trust.py)
+    if pack.low_context:
+        if pack.retrieved_count == 0:
+            reason = "nothing retrieved — no chunks matched the query"
+        elif pack.citation_coverage == 0.0:
+            reason = "hit(s) found but excluded by the token budget"
+        elif pack.trust_filtered:
+            reason = "hit(s) found but withheld (ACL-restricted or malformed input)"
+        else:
+            reason = "hit(s) found but none cleared the retrieval floor"
+        low_context_suffix = f", LOW CONTEXT — {reason}"
+    else:
+        low_context_suffix = ""
+
     summary = (
         f"{len(pack.citations)} citation(s), "
         f"coverage {pack.citation_coverage:.2f}, "
         f"~{pack.token_count} tokens"
-        + (", LOW CONTEXT — nothing cleared the retrieval floor" if pack.low_context else "")
+        + low_context_suffix
     )
     return {
         "case_id": str(pack.case_id),
@@ -94,4 +128,5 @@ def get_case_context_pack(
         "citation_coverage": pack.citation_coverage,
         "token_count": pack.token_count,
         "compile_ms": pack.compile_ms,
+        "retrieved_count": pack.retrieved_count,
     }

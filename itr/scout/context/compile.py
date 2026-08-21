@@ -199,6 +199,15 @@ class ContextPack:
     citation_coverage: float
     compile_ms: float
     trust_filtered: bool
+    # Finding 1 fix: the raw retrieve() hit count, BEFORE trust_filter. The
+    # route needs this (alongside the fields above, all already existed) to
+    # tell "nothing retrieved" apart from "retrieved, then filtered out" in
+    # its low_context message — see scout/api/routes/context.py. No other
+    # new field was needed: citation_coverage already distinguishes
+    # "0 ok hits" (defaults to 1.0) from "ok hits existed but none fit the
+    # token budget" (0.0), and trust_filtered already flags ACL/malformed
+    # withholding.
+    retrieved_count: int
 
 
 def _to_citation(
@@ -304,6 +313,7 @@ def compile(
         citation_coverage=citation_coverage,
         compile_ms=compile_ms,
         trust_filtered=trust_filtered,
+        retrieved_count=len(hits),
     )
 
 

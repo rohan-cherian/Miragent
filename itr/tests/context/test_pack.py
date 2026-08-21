@@ -179,6 +179,80 @@ def test_compile_calls_retrieve_exactly_once(monkeypatch):
     assert call_count == 1
 
 
+def test_retrieved_count_is_zero_when_nothing_comes_back(monkeypatch):
+    """Finding 1 fix: the route needs to tell 'nothing retrieved' apart
+    from 'retrieved, then filtered out' — retrieved_count is the raw
+    retrieve() hit count, before trust_filter."""
+    monkeypatch.setattr(compile_module, "retrieve", lambda *a, **k: [])
+
+    pack = compile_pack(
+        intent="test", case_id=uuid.uuid4(), query_text="anything",
+        acl_tags=[f"tenant:{uuid.uuid4()}"],
+    )
+
+    assert pack.low_context is True
+    assert pack.retrieved_count == 0
+
+
+def test_retrieved_count_reflects_hits_even_when_all_are_acl_restricted(monkeypatch):
+    """Hits arrived (retrieved_count > 0) but none matched the caller's ACL
+    tags — trust_filtered must be True and citation_coverage must default
+    to 1.0 (zero ok_hits), distinguishing this from a budget exclusion."""
+    other_tenant = f"tenant:{uuid.uuid4()}"
+    caller_tenant = f"tenant:{uuid.uuid4()}"
+    hits = [
+        {
+            "chunk_id": str(uuid.uuid4()),
+            "score": 0.90,
+            "payload": {
+                "message_id": str(uuid.uuid4()),
+                "acl_tags": [other_tenant],  # never matches caller_tenant
+                "parent_text": "restricted text",
+                "child_text": "restricted text",
+            },
+        }
+    ]
+    monkeypatch.setattr(compile_module, "retrieve", lambda *a, **k: hits)
+
+    pack = compile_pack(
+        intent="test", case_id=uuid.uuid4(), query_text="anything", acl_tags=[caller_tenant]
+    )
+
+    assert pack.low_context is True
+    assert pack.retrieved_count == 1
+    assert pack.trust_filtered is True
+    assert pack.citation_coverage == 1.0, "zero ok_hits -> the no-hits default, not a budget signal"
+
+
+def test_citation_coverage_is_zero_when_ok_hits_are_excluded_by_budget(monkeypatch):
+    """ok_hits existed (ACL passed) but every one was too large for the
+    token budget — citation_coverage must be 0.0, distinguishing a budget
+    exclusion from 'nothing ok came back at all'."""
+    marker = f"tenant:{uuid.uuid4()}"
+    hits = [
+        {
+            "chunk_id": str(uuid.uuid4()),
+            "score": 0.90,
+            "payload": {
+                "message_id": str(uuid.uuid4()),
+                "acl_tags": [marker],
+                "parent_text": "text " * 500,
+                "child_text": "text " * 500,  # far bigger than the tiny budget below
+            },
+        }
+    ]
+    monkeypatch.setattr(compile_module, "retrieve", lambda *a, **k: hits)
+    monkeypatch.setattr(compile_module, "_lookup_sent_at", lambda message_ids: {})
+    monkeypatch.setattr(settings, "token_budget", 1)  # smaller than any real citation
+
+    pack = compile_pack(intent="test", case_id=uuid.uuid4(), query_text="anything", acl_tags=[marker])
+
+    assert pack.low_context is True
+    assert pack.retrieved_count == 1
+    assert pack.trust_filtered is False
+    assert pack.citation_coverage == 0.0
+
+
 def test_citation_with_no_matching_message_row_serialises_with_missing_status():
     """Orphaned chunk: its message_id has no matching itr360.message row,
     so _lookup_sent_at() never fills in a real source_ts and it stays

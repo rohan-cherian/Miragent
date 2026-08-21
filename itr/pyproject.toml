@@ -105,3 +105,6 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v --tb=short"
+markers = [
+    "live: needs a live external service (Postgres/Qdrant/etc) reachable; excludable with -m \"not live\"",
+]

@@ -190,6 +190,32 @@ def _persist_inbound_message(
         session.commit()
 
 
+SUBJECT = "Licence key stopped working after renewal"
+
+
+def _purge_leftovers(engine) -> int:
+    """Remove cases this test left behind on an earlier failed run.
+
+    Correlation rule 4 links a new message into any case from the same
+    person whose subject scores >0.85 similar within the dedup window, so
+    one leftover makes every later run assert dedup_link instead of
+    new_case. A per-run subject suffix cannot fix it — SequenceMatcher
+    still scores two suffixed copies well above the threshold — and the
+    wording has to stay intact for the triage assertions downstream.
+    """
+    from sqlalchemy.orm import Session as _Session
+    with _Session(engine) as session:
+        ids = session.execute(
+            # Prefix match, not equality: rule 4 compares fuzzily, so a
+            # leftover whose subject merely starts with SUBJECT still
+            # scores above the threshold and still poisons this run.
+            select(Case.id).where(Case.subject.like(SUBJECT + "%"))
+        ).scalars().all()
+    for case_id in ids:
+        _cleanup(engine, case_id)
+    return len(ids)
+
+
 def _cleanup(engine, case_id: uuid.UUID) -> None:
     """decision_audit is append-only (Task 23) and never touched here,
     only queried. Everything else this test created is cleaned up.
@@ -240,7 +266,7 @@ async def _drive_pipeline_through_every_stage(engine, persona_email: str) -> tup
     thread_id = f"test-thread-{uuid.uuid4()}"
     src_message_id = f"test-msg-{uuid.uuid4()}"
     now = datetime.now(UTC)
-    subject = "Licence key stopped working after renewal"
+    subject = SUBJECT
     body = (
         "My licence key stopped working after the renewal went through. "
         "The build machine cannot sign without it and we ship on Friday."
@@ -304,6 +330,7 @@ async def test_audit_trail_is_complete_and_traceable_across_the_pipeline(monkeyp
     engine = _make_engine()
     _skip_if_qdrant_unreachable()
     persona_email = _verified_persona_email(engine)
+    _purge_leftovers(engine)
 
     async def _model_must_not_be_called(**kwargs):
         raise AssertionError(

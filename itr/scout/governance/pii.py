@@ -124,17 +124,10 @@ def redact(text: str) -> RedactionResult:
             def _mask(original_value: str) -> str:
                 key = (entity_type, original_value)
                 if key not in placeholder_by_key:
-                    # Presidio resolves overlapping entities, so the span it asks
-                    # about can differ from the analyzer span pre-registered above.
-                    # Mint a placeholder rather than abort: the value is still
-                    # masked and still reversible via pii_map, so the fail-closed
-                    # guarantee holds — whereas raising loses the whole message
-                    # over a boundary difference.
-                    counters[entity_type] = counters.get(entity_type, 0) + 1
-                    label = _PLACEHOLDER_LABELS.get(entity_type, entity_type)
-                    minted = f"PII_{label}_{counters[entity_type]:02d}"
-                    placeholder_by_key[key] = minted
-                    pii_map[minted] = original_value
+                    raise RedactionError(
+                        "Anonymizer produced a value with no assigned placeholder "
+                        f"for entity type {entity_type!r}."
+                    )
                 return placeholder_by_key[key]
 
             return _mask

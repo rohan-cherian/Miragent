@@ -41,7 +41,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from scout.api.deps import get_db_session
-from scout.api.schemas import Run
+from scout.api.schemas import RunStage, Run
 from scout.canonical.models import Quarantine
 
 router = APIRouter()
@@ -59,6 +59,13 @@ _LIST_SQL = f"""
       WHERE (CAST(:source_system AS text) IS NULL OR source_system = :source_system)
       AND (CAST(:status AS text) IS NULL OR status = :status)
     ORDER BY started_at DESC
+"""
+
+_STAGES_SQL = """
+    SELECT stage, progress_pct, log_line, duration_ms, created_at
+    FROM raw_ingest.run_stage_event
+    WHERE run_id = :id
+    ORDER BY id
 """
 
 _GET_SQL = f"""
@@ -123,7 +130,11 @@ def get_run(
     row = session.execute(text(_GET_SQL), {"id": id}).mappings().first()
     if row is None:
         raise HTTPException(status_code=404, detail="run not found")  # contract 404
-    return _to_run(row)
+    run = _to_run(row)
+    # The seven stages the doc requires on the detail route.
+    stages = session.execute(text(_STAGES_SQL), {"id": id}).mappings().all()
+    run.stages = [RunStage(**dict(stage_row)) for stage_row in stages]
+    return run
 
 
 @router.get("/runs/{id}/quarantine")

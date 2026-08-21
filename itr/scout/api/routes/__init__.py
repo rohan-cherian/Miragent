@@ -28,7 +28,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -81,14 +81,21 @@ def submit_decision_route(
         if body.action.value == "reject":
             payload["reject_reason"] = body.note  # bridge 2 (module docstring)
 
-    result = handle_submit_decision(
-        case_id=id,
-        action=_ACTION_MAP[body.action.value],
-        payload=payload,
-        idempotency_key=idempotency_key,
-        if_match=if_match,
-        actor=actor,
-    )
+    try:
+        result = handle_submit_decision(
+            case_id=id,
+            action=_ACTION_MAP[body.action.value],
+            payload=payload,
+            idempotency_key=idempotency_key,
+            if_match=if_match,
+            actor=actor,
+        )
+    except ValueError as exc:
+        # submit_decision raises when a case has no proposed_action — nothing
+        # has been drafted to decide on yet. That is an expected state, not a
+        # server fault, so return a 404 the console can render rather than
+        # letting it escape as an opaque 500.
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     # handle_submit_decision() returns dicts, not raises — map by shape.
     if "error" in result:  # {"error": "already_decided", "by": ..., "at": ...}

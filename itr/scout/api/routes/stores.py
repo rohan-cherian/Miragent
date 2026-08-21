@@ -63,6 +63,28 @@ def _postgres_counts(session: Session) -> dict[str, int]:
     return {row["table_name"]: int(row["n"]) for row in rows}
 
 
+def _raw_lake_metrics(session: Session) -> dict[str, Any]:
+    """MinIO raw lake, counted from the ledger rather than by listing objects.
+
+    Listing a bucket on every panel refresh is the wrong shape for a dashboard;
+    src_gmail.raw_objects records exactly what was written, so it answers the
+    same question without an S3 round trip.
+    """
+    rows = session.execute(
+        text(
+            "SELECT (SELECT count(*) FROM src_gmail.raw_objects) AS objects, "
+            "       (SELECT count(*) FROM src_gmail.attachment)  AS attachments"
+        )
+    ).mappings().first()
+    return {
+        "bucket": settings.minio_bucket,
+        "endpoint": settings.minio_endpoint,
+        "objects": int(rows["objects"] or 0) if rows else 0,
+        "attachments": int(rows["attachments"] or 0) if rows else 0,
+        "prefix": settings.gmail_raw_prefix,
+    }
+
+
 def _qdrant_metrics() -> dict[str, Any]:
     """Point count plus the pins that decide whether a re-embed is needed.
 
@@ -99,7 +121,12 @@ def _qdrant_metrics() -> dict[str, Any]:
 @router.get("/stores/metrics")
 def stores_metrics(session: Session = Depends(get_db_session)) -> Any:
     counts = _postgres_counts(session)
+    raw_lake = _raw_lake_metrics(session)
+    # The console's MinIO card reads attachment counts alongside the canonical
+    # tables, so surface it in both places rather than making the UI join them.
+    counts["attachment"] = raw_lake["attachments"]
     return {
+        "minio": raw_lake,
         "postgres": {
             "tables": counts,
             "total_rows": sum(counts.values()),

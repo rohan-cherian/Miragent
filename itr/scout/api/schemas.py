@@ -154,6 +154,21 @@ class Connection(BaseModel):
     last_synced_at: datetime | None = None
 
 
+class RunStage(BaseModel):
+    """One row of raw_ingest.run_stage_event.
+
+    Task 24 requires GET /runs/{id} to carry "the seven stages with progress,
+    per-stage duration and log lines" — that is what drives the console's
+    Pipeline Scan bars, timeline and mini-logs.
+    """
+
+    stage: str
+    progress_pct: int
+    log_line: str
+    duration_ms: int | None = None
+    created_at: datetime | None = None
+
+
 class Run(BaseModel):
     id: uuid.UUID
     source_system: str
@@ -161,6 +176,8 @@ class Run(BaseModel):
     started_at: datetime
     finished_at: datetime | None = None
     counts: dict[str, int] | None = None
+    # Populated on the detail route only; the list stays light.
+    stages: list[RunStage] | None = None
 
 
 class IdentityQueueItem(BaseModel):
